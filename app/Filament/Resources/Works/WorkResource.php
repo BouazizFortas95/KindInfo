@@ -39,68 +39,66 @@ class WorkResource extends Resource
     {
         return $schema
             ->components([
-                Section::make('Work Details')
-                    ->schema([
-                        TextInput::make('slug_main')
-                            ->label('Main Slug')
-                            ->default(fn() => (string) time())
-                            ->disabled()
-                            ->dehydrated()
-                            ->required()
-                            ->maxLength(255),
+                TextInput::make('slug_main')
+                    ->label('Main Slug')
+                    ->default(fn() => (string) time())
+                    ->disabled()
+                    ->dehydrated(true)
+                    ->required()
+                    ->maxLength(255),
 
-                        Toggle::make('is_published')
-                            ->label('Published')
-                            ->default(false),
+                Toggle::make('is_published')
+                    ->label('Published')
+                    ->default(false),
 
-                        TextInput::make('title')
-                            ->label('Title')
-                            ->required()
-                            ->maxLength(255)
-                            ->live(onBlur: true)
-                            ->afterStateUpdated(fn(Set $set, ?string $state) => $set('slug', Str::slug($state))),
+                TextInput::make('title')
+                    ->label('Title')
+                    ->required()
+                    ->maxLength(255)
+                    ->live(onBlur: true)
+                    ->afterStateUpdated(fn(Set $set, ?string $state) => $set('slug', Str::slug($state))),
 
-                        TextInput::make('slug')
-                            ->label('Slug')
-                            ->disabled()
-                            ->dehydrated()
-                            ->required()
-                            ->maxLength(255),
+                TextInput::make('slug')
+                    ->label('Slug')
+                    ->disabled()
+                    ->dehydrated(true)
+                    ->required()
+                    ->maxLength(255),
 
-                        Textarea::make('description')
-                            ->label('Description')
-                            ->rows(3)
-                            ->columnSpanFull(),
+                Textarea::make('description')
+                    ->label('Description')
+                    ->rows(3)
+                    ->columnSpanFull(),
 
-                        RichEditor::make('content')
-                            ->label('Content')
-                            ->columnSpanFull(),
+                RichEditor::make('content')
+                    ->label('Content')
+                    ->columnSpanFull(),
 
-                        FileUpload::make('feature_image')
-                            ->label('Feature Image')
-                            ->directory('works')
-                            ->image()
-                            ->imageEditor()
-                            ->columnSpanFull(),
+                FileUpload::make('feature_image')
+                    ->label('Feature Image')
+                    ->directory('works')
+                    ->image()
+                    ->imageEditor()
+                    ->columnSpanFull(),
 
-                        Select::make('categories')
-                            ->label('Categories')
-                            ->relationship('categories')
-                            ->getSearchResultsUsing(
-                                fn(string $search): array =>
-                                \App\Models\Category::whereTranslationLike('name', "%{$search}%")
-                                    ->limit(50)
-                                    ->get()
-                                    ->pluck('name', 'id')
-                                    ->toArray()
-                            )
-                            ->getOptionLabelFromRecordUsing(fn(\App\Models\Category $record) => $record->name ?? $record->translations->first()?->name ?? 'No Name')
-                            ->multiple()
-                            ->preload()
-                            ->searchable()
-                            ->columnSpanFull(),
-                    ])->columns(2),
-            ]);
+                Select::make('categories')
+                    ->label('Categories')
+                    ->relationship('categories')
+                    ->getSearchResultsUsing(
+                        fn(string $search): array =>
+                        \App\Models\Category::whereTranslationLike('name', "%{$search}%")
+                            ->limit(50)
+                            ->get()
+                            ->pluck('name', 'id')
+                            ->toArray()
+                    )
+                    ->getOptionLabelFromRecordUsing(fn(\App\Models\Category $record) => $record->name ?? $record->translations->first()?->name ?? 'No Name')
+                    ->multiple()
+                    ->preload()
+                    ->searchable()
+                    ->columnSpanFull(),
+            ])
+            ->extraAttributes(['class' => 'custom-section-style']);
     }
 
     public static function table(Table $table): Table
@@ -112,6 +110,7 @@ class WorkResource extends Resource
 
                 TextColumn::make('title')
                     ->label('Title')
+                    ->state(fn(Work $record): ?string => $record->translate(app()->getLocale())?->title)
                     ->searchable(query: function ($query, string $search): \Illuminate\Database\Eloquent\Builder {
                         return $query->whereTranslationLike('title', "%{$search}%");
                     }),
@@ -134,7 +133,13 @@ class WorkResource extends Resource
                 //
             ])
             ->recordActions([
-                EditAction::make(),
+                EditAction::make()
+                    ->modalWidth('7xl')
+                    ->using(function (Work $record, array $data): Work {
+                        $record->fill($data);
+                        $record->save();
+                        return $record;
+                    }),
                 DeleteAction::make(),
             ])
             ->toolbarActions([
