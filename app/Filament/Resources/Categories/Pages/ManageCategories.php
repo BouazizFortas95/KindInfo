@@ -1,5 +1,7 @@
 <?php
 
+namespace App\Filament\Resources\Categories\Pages;
+
 use App\Models\Category;
 use App\Filament\Resources\Categories\CategoryResource;
 use Filament\Actions\CreateAction;

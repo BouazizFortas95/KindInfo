@@ -95,8 +95,8 @@ class CategoryResource extends Resource
                                         ->disabled()
                                         ->dehydrated(true),
                                 ])
-                                    ->extraAttributes([
-                                        'style' => fn($get) => $get('form_locale') !== 'en' ? 'display: none' : ''
+                                    ->extraAttributes(fn($get) => [
+                                        'style' => $get('form_locale') !== 'en' ? 'display: none' : ''
                                     ])
                                     ->columnSpanFull(),
 
@@ -114,8 +114,8 @@ class CategoryResource extends Resource
                                         ->disabled()
                                         ->dehydrated(true),
                                 ])
-                                    ->extraAttributes([
-                                        'style' => fn($get) => $get('form_locale') !== 'ar' ? 'display: none' : ''
+                                    ->extraAttributes(fn($get) => [
+                                        'style' => $get('form_locale') !== 'ar' ? 'display: none' : ''
                                     ])
                                     ->columnSpanFull(),
 
@@ -133,8 +133,8 @@ class CategoryResource extends Resource
                                         ->disabled()
                                         ->dehydrated(true),
                                 ])
-                                    ->extraAttributes([
-                                        'style' => fn($get) => $get('form_locale') !== 'fr' ? 'display: none' : ''
+                                    ->extraAttributes(fn($get) => [
+                                        'style' => $get('form_locale') !== 'fr' ? 'display: none' : ''
                                     ])
                                     ->columnSpanFull(),
                             ]),
