@@ -14,14 +14,7 @@ class ManageCategories extends ManageRecords
     protected function getHeaderActions(): array
     {
         return [
-            CreateAction::make()
-                ->using(function (array $data, string $model): Category {
-                    $record = new Category();
-                    $record->fill($data);
-                    $record->parent_id = $data['parent_id'] ?? null;
-                    $record->save();
-                    return $record;
-                }),
+            CreateAction::make(),
         ];
     }
 }

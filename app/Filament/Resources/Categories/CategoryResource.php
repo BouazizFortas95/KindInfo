@@ -64,80 +64,17 @@ class CategoryResource extends Resource
 
                 Section::make()
                     ->schema([
-                        \Filament\Forms\Components\Select::make('form_locale')
-                            ->label(__('categories.fields.edit_language'))
-                            ->options([
-                                'en' => 'English',
-                                'ar' => 'العربية',
-                                'fr' => 'Français',
-                            ])
-                            ->default(app()->getLocale())
-                            ->live()
-                            ->selectablePlaceholder(false)
-                            ->native(false)
-                            ->prefixIcon('heroicon-m-language')
-                            ->columnSpanFull(),
-
-                        Grid::make(2)
-                            ->schema([
-                                // English Group
-                                Group::make([
-                                    TextInput::make('en.name')
-                                        ->label(__('categories.fields.name') . ' (EN)')
-                                        ->required(fn(string $operation) => $operation === 'create')
-                                        ->maxLength(255)
-                                        ->live(onBlur: true)
-                                        ->afterStateUpdated(fn(Set $set, ?string $state) => $set('en.slug', \Illuminate\Support\Str::slug($state)))
-                                        ->dehydrated(true),
-                                    TextInput::make('en.slug')
-                                        ->label(__('categories.fields.slug') . ' (EN)')
-                                        ->maxLength(255)
-                                        ->disabled()
-                                        ->dehydrated(true),
-                                ])
-                                    ->extraAttributes(fn($get) => [
-                                        'style' => $get('form_locale') !== 'en' ? 'display: none' : ''
-                                    ])
-                                    ->columnSpanFull(),
-
-                                // Arabic Group
-                                Group::make([
-                                    TextInput::make('ar.name')
-                                        ->label(__('categories.fields.name') . ' (AR)')
-                                        ->maxLength(255)
-                                        ->live(onBlur: true)
-                                        ->afterStateUpdated(fn(Set $set, ?string $state) => $set('ar.slug', \Illuminate\Support\Str::slug($state)))
-                                        ->dehydrated(true),
-                                    TextInput::make('ar.slug')
-                                        ->label(__('categories.fields.slug') . ' (AR)')
-                                        ->maxLength(255)
-                                        ->disabled()
-                                        ->dehydrated(true),
-                                ])
-                                    ->extraAttributes(fn($get) => [
-                                        'style' => $get('form_locale') !== 'ar' ? 'display: none' : ''
-                                    ])
-                                    ->columnSpanFull(),
-
-                                // French Group
-                                Group::make([
-                                    TextInput::make('fr.name')
-                                        ->label(__('categories.fields.name') . ' (FR)')
-                                        ->maxLength(255)
-                                        ->live(onBlur: true)
-                                        ->afterStateUpdated(fn(Set $set, ?string $state) => $set('fr.slug', \Illuminate\Support\Str::slug($state)))
-                                        ->dehydrated(true),
-                                    TextInput::make('fr.slug')
-                                        ->label(__('categories.fields.slug') . ' (FR)')
-                                        ->maxLength(255)
-                                        ->disabled()
-                                        ->dehydrated(true),
-                                ])
-                                    ->extraAttributes(fn($get) => [
-                                        'style' => $get('form_locale') !== 'fr' ? 'display: none' : ''
-                                    ])
-                                    ->columnSpanFull(),
-                            ]),
+                        TextInput::make('name')
+                            ->label(__('categories.fields.name'))
+                            ->required()
+                            ->maxLength(255)
+                            ->live(onBlur: true)
+                            ->afterStateUpdated(fn(Set $set, ?string $state) => $set('slug', \Illuminate\Support\Str::slug($state))),
+                        TextInput::make('slug')
+                            ->label(__('categories.fields.slug'))
+                            ->maxLength(255)
+                            ->disabled()
+                            ->dehydrated(),
                     ]),
             ]);
     }
@@ -175,14 +112,7 @@ class CategoryResource extends Resource
                 //
             ])
             ->recordActions([
-                EditAction::make()
-                    ->using(function (Category $record, array $data): Category {
-                        $record->fill($data);
-                        $record->parent_id = $data['parent_id'] ?? null;
-                        $record->save();
-
-                        return $record;
-                    }),
+                EditAction::make(),
                 DeleteAction::make(),
             ])
             ->toolbarActions([
