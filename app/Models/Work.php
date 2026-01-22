@@ -18,6 +18,10 @@ class Work extends Model implements TranslatableContract
         'slug_main',
         'is_published',
         'feature_image',
+        'title',
+        'slug',
+        'description',
+        'content',
     ];
 
     protected $casts = [

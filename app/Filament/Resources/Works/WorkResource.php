@@ -18,8 +18,6 @@ use Filament\Forms\Components\RichEditor;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Schemas\Components\Section;
-use Filament\Schemas\Components\Tabs;
-use Filament\Schemas\Components\Tabs\Tab;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\ImageColumn;
@@ -41,17 +39,42 @@ class WorkResource extends Resource
     {
         return $schema
             ->components([
-                Section::make('General Information')
+                Section::make('Work Details')
                     ->schema([
                         TextInput::make('slug_main')
-                            ->label('Slug (Main)')
+                            ->label('Main Slug')
+                            ->default(fn() => (string) time())
+                            ->disabled()
+                            ->dehydrated()
                             ->required()
-                            ->unique(ignoreRecord: true)
                             ->maxLength(255),
 
                         Toggle::make('is_published')
                             ->label('Published')
                             ->default(false),
+
+                        TextInput::make('title')
+                            ->label('Title')
+                            ->required()
+                            ->maxLength(255)
+                            ->live(onBlur: true)
+                            ->afterStateUpdated(fn(Set $set, ?string $state) => $set('slug', Str::slug($state))),
+
+                        TextInput::make('slug')
+                            ->label('Slug')
+                            ->disabled()
+                            ->dehydrated()
+                            ->required()
+                            ->maxLength(255),
+
+                        Textarea::make('description')
+                            ->label('Description')
+                            ->rows(3)
+                            ->columnSpanFull(),
+
+                        RichEditor::make('content')
+                            ->label('Content')
+                            ->columnSpanFull(),
 
                         FileUpload::make('feature_image')
                             ->label('Feature Image')
@@ -62,64 +85,21 @@ class WorkResource extends Resource
 
                         Select::make('categories')
                             ->label('Categories')
-                            ->relationship('categories', 'name')
+                            ->relationship('categories')
+                            ->getSearchResultsUsing(
+                                fn(string $search): array =>
+                                \App\Models\Category::whereTranslationLike('name', "%{$search}%")
+                                    ->limit(50)
+                                    ->get()
+                                    ->pluck('name', 'id')
+                                    ->toArray()
+                            )
+                            ->getOptionLabelFromRecordUsing(fn(\App\Models\Category $record) => $record->name ?? $record->translations->first()?->name ?? 'No Name')
                             ->multiple()
                             ->preload()
                             ->searchable()
                             ->columnSpanFull(),
                     ])->columns(2),
-
-                Section::make('Translations')
-                    ->schema([
-                        Tabs::make('translations')
-                            ->tabs([
-                                Tab::make('English')
-                                    ->icon('heroicon-m-language')
-                                    ->schema([
-                                        TextInput::make('translations.en.title')
-                                            ->label('Title (EN)')
-                                            ->required(fn(string $operation) => $operation === 'create')
-                                            ->maxLength(255)
-                                            ->live(onBlur: true)
-                                            ->afterStateUpdated(fn(Set $set, ?string $state) => $set('translations.en.slug', Str::slug($state))),
-
-                                        TextInput::make('translations.en.slug')
-                                            ->label('Slug (EN)')
-                                            ->required(fn(string $operation) => $operation === 'create')
-                                            ->maxLength(255),
-
-                                        Textarea::make('translations.en.description')
-                                            ->label('Description (EN)')
-                                            ->rows(3),
-
-                                        RichEditor::make('translations.en.content')
-                                            ->label('Content (EN)')
-                                            ->columnSpanFull(),
-                                    ]),
-
-                                Tab::make('العربية')
-                                    ->icon('heroicon-m-language')
-                                    ->schema([
-                                        TextInput::make('translations.ar.title')
-                                            ->label('العنوان (AR)')
-                                            ->maxLength(255)
-                                            ->live(onBlur: true)
-                                            ->afterStateUpdated(fn(Set $set, ?string $state) => $set('translations.ar.slug', Str::slug($state))),
-
-                                        TextInput::make('translations.ar.slug')
-                                            ->label('الرابط (AR)')
-                                            ->maxLength(255),
-
-                                        Textarea::make('translations.ar.description')
-                                            ->label('الوصف (AR)')
-                                            ->rows(3),
-
-                                        RichEditor::make('translations.ar.content')
-                                            ->label('المحتوى (AR)')
-                                            ->columnSpanFull(),
-                                    ]),
-                            ]),
-                    ]),
             ]);
     }
 
@@ -132,7 +112,6 @@ class WorkResource extends Resource
 
                 TextColumn::make('title')
                     ->label('Title')
-                    ->state(fn(Work $record): ?string => $record->translate(app()->getLocale())?->title)
                     ->searchable(query: function ($query, string $search): \Illuminate\Database\Eloquent\Builder {
                         return $query->whereTranslationLike('title', "%{$search}%");
                     }),
@@ -155,12 +134,7 @@ class WorkResource extends Resource
                 //
             ])
             ->recordActions([
-                EditAction::make()
-                    ->using(function (Work $record, array $data): Work {
-                        $record->fill($data);
-                        $record->save();
-                        return $record;
-                    }),
+                EditAction::make(),
                 DeleteAction::make(),
             ])
             ->toolbarActions([
