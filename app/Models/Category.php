@@ -12,7 +12,7 @@ class Category extends Model implements TranslatableContract
     use HasFactory, Translatable;
 
     public $translatedAttributes = ['name', 'slug'];
-    protected $fillable = ['parent_id'];
+    protected $fillable = ['parent_id', 'form_locale'];
 
     public function parent(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
@@ -22,5 +22,20 @@ class Category extends Model implements TranslatableContract
     public function children(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
         return $this->hasMany(self::class, 'parent_id');
+    }
+
+    public function en(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(CategoryTranslation::class)->where('locale', 'en');
+    }
+
+    public function ar(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(CategoryTranslation::class)->where('locale', 'ar');
+    }
+
+    public function fr(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(CategoryTranslation::class)->where('locale', 'fr');
     }
 }
