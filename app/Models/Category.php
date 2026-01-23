@@ -12,7 +12,7 @@ class Category extends Model implements TranslatableContract
     use HasFactory, Translatable;
 
     public $translatedAttributes = ['name', 'slug'];
-    protected $fillable = ['parent_id', 'name', 'slug'];
+    protected $fillable = ['parent_id'];
 
     public function parent(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {

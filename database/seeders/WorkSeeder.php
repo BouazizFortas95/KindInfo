@@ -27,29 +27,36 @@ class WorkSeeder extends Seeder
             $titleEn = $faker->sentence(3);
             $titleAr = "عمل رقم " . $i . " - " . $faker->word();
 
-            $work = new Work();
-            $work->slug_main = Str::slug($titleEn) . '-' . $i;
-            $work->is_published = $faker->boolean(80);
-            $work->feature_image = 'works/demo-' . $i . '.jpg';
+            $work = Work::create([
+                'slug_main' => Str::slug($titleEn) . '-' . $i,
+                'is_published' => $faker->boolean(80),
+                'feature_image' => 'works/demo-' . $i . '.jpg',
+            ]);
 
             // English translation
-            $work->translateOrNew('en')->title = $titleEn;
-            $work->translateOrNew('en')->slug = Str::slug($titleEn);
-            $work->translateOrNew('en')->description = $faker->paragraph(2);
-            $work->translateOrNew('en')->content = $faker->text(500);
+            $work->translations()->create([
+                'locale' => 'en',
+                'title' => $titleEn,
+                'slug' => Str::slug($titleEn),
+                'description' => $faker->paragraph(2),
+                'content' => $faker->text(500),
+            ]);
 
             // Arabic translation
-            $work->translateOrNew('ar')->title = $titleAr;
-            $work->translateOrNew('ar')->slug = 'عمل-' . $i;
-            $work->translateOrNew('ar')->description = 'هذا وصف قصير للعمل باللغة العربية رقم ' . $i;
-            $work->translateOrNew('ar')->content = 'هذا محتوى العمل باللغة العربية مطول رقم ' . $i . '. ' . $faker->text(300);
-
-            $work->save();
+            $work->translations()->create([
+                'locale' => 'ar',
+                'title' => $titleAr,
+                'slug' => 'عمل-' . $i,
+                'description' => 'هذا وصف قصير للعمل باللغة العربية رقم ' . $i,
+                'content' => 'هذا محتوى العمل باللغة العربية مطول رقم ' . $i . '. ' . $faker->text(300),
+            ]);
 
             // Assign 1-3 random categories
-            $work->categories()->attach(
-                $categories->random(rand(1, 3))->pluck('id')->toArray()
-            );
+            if ($categories->isNotEmpty()) {
+                $work->categories()->attach(
+                    $categories->random(min(rand(1, 3), $categories->count()))->pluck('id')->toArray()
+                );
+            }
         }
     }
 }

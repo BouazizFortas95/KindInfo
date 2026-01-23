@@ -35,12 +35,22 @@ class WorkResource extends Resource
 
     protected static ?string $recordTitleAttribute = 'slug_main';
 
+    public static function getLabel(): ?string
+    {
+        return __('works.work');
+    }
+
+    public static function getPluralLabel(): ?string
+    {
+        return __('works.works');
+    }
+
     public static function form(Schema $schema): Schema
     {
         return $schema
             ->components([
                 TextInput::make('slug_main')
-                    ->label('Main Slug')
+                    ->label(__('works.main_slug'))
                     ->default(fn() => (string) time())
                     ->disabled()
                     ->dehydrated(true)
@@ -48,41 +58,41 @@ class WorkResource extends Resource
                     ->maxLength(255),
 
                 Toggle::make('is_published')
-                    ->label('Published')
+                    ->label(__('works.published'))
                     ->default(false),
 
                 TextInput::make('title')
-                    ->label('Title')
+                    ->label(__('works.title'))
                     ->required()
                     ->maxLength(255)
                     ->live(onBlur: true)
                     ->afterStateUpdated(fn(Set $set, ?string $state) => $set('slug', Str::slug($state))),
 
                 TextInput::make('slug')
-                    ->label('Slug')
+                    ->label(__('works.slug'))
                     ->disabled()
                     ->dehydrated(true)
                     ->required()
                     ->maxLength(255),
 
                 Textarea::make('description')
-                    ->label('Description')
+                    ->label(__('works.description'))
                     ->rows(3)
                     ->columnSpanFull(),
 
                 RichEditor::make('content')
-                    ->label('Content')
+                    ->label(__('works.content'))
                     ->columnSpanFull(),
 
                 FileUpload::make('feature_image')
-                    ->label('Feature Image')
+                    ->label(__('works.feature_image'))
                     ->directory('works')
                     ->image()
                     ->imageEditor()
                     ->columnSpanFull(),
 
                 Select::make('categories')
-                    ->label('Categories')
+                    ->label(__('works.categories'))
                     ->relationship('categories')
                     ->getSearchResultsUsing(
                         fn(string $search): array =>
@@ -106,25 +116,25 @@ class WorkResource extends Resource
         return $table
             ->columns([
                 ImageColumn::make('feature_image')
-                    ->label('Image'),
+                    ->label(__('works.image')),
 
                 TextColumn::make('title')
-                    ->label('Title')
+                    ->label(__('works.title'))
                     ->state(fn(Work $record): ?string => $record->translate(app()->getLocale())?->title)
                     ->searchable(query: function ($query, string $search): \Illuminate\Database\Eloquent\Builder {
                         return $query->whereTranslationLike('title', "%{$search}%");
                     }),
 
                 TextColumn::make('slug_main')
-                    ->label('Main Slug')
+                    ->label(__('works.main_slug'))
                     ->searchable()
                     ->sortable(),
 
                 ToggleColumn::make('is_published')
-                    ->label('Published'),
+                    ->label(__('works.published')),
 
                 TextColumn::make('created_at')
-                    ->label('Created At')
+                    ->label(__('works.created_at'))
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
