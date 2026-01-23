@@ -21,20 +21,27 @@ class TestimonialsTable
         return $table
             ->columns([
                 ImageColumn::make('client_avatar')
+                    ->label(__('testimonials.fields.client_avatar'))
                     ->circular(),
                 TextColumn::make('client_name')
+                    ->label(__('testimonials.fields.client_name'))
                     ->searchable()
                     ->sortable(),
                 TextColumn::make('client_company')
+                    ->label(__('testimonials.fields.client_company'))
                     ->searchable(),
                 TextColumn::make('rating')
+                    ->label(__('testimonials.fields.rating'))
                     ->sortable(),
                 IconColumn::make('is_visible')
+                    ->label(__('testimonials.fields.is_visible'))
                     ->boolean()
                     ->sortable(),
                 TextColumn::make('order')
+                    ->label(__('testimonials.fields.order'))
                     ->sortable(),
                 TextColumn::make('created_at')
+                    ->label(__('testimonials.fields.created_at'))
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),

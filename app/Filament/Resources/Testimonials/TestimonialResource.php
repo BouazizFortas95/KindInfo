@@ -20,6 +20,21 @@ class TestimonialResource extends Resource
 
     protected static ?string $recordTitleAttribute = 'client_name';
 
+    public static function getModelLabel(): string
+    {
+        return __('testimonials.resource.label');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('testimonials.resource.plural_label');
+    }
+
+    public static function getNavigationLabel(): string
+    {
+        return __('testimonials.resource.plural_label');
+    }
+
     public static function form(Schema $schema): Schema
     {
         return TestimonialForm::configure($schema);

@@ -16,15 +16,19 @@ class TestimonialForm
         return $schema
             ->components([
                 TextInput::make('client_name')
+                    ->label(__('testimonials.fields.client_name'))
                     ->required()
                     ->maxLength(255),
                 TextInput::make('client_company')
+                    ->label(__('testimonials.fields.client_company'))
                     ->maxLength(255),
                 FileUpload::make('client_avatar')
+                    ->label(__('testimonials.fields.client_avatar'))
                     ->image()
                     ->avatar()
                     ->directory('testimonials/avatars'),
                 Select::make('rating')
+                    ->label(__('testimonials.fields.rating'))
                     ->options([
                         1 => '1',
                         2 => '2',
@@ -35,16 +39,20 @@ class TestimonialForm
                     ->default(5)
                     ->required(),
                 Toggle::make('is_visible')
+                    ->label(__('testimonials.fields.is_visible'))
                     ->default(true),
                 TextInput::make('order')
+                    ->label(__('testimonials.fields.order'))
                     ->numeric()
                     ->default(0),
 
                 // Translated fields
                 TextInput::make('client_title')
+                    ->label(__('testimonials.fields.client_title'))
                     ->required()
                     ->maxLength(255),
                 Textarea::make('content')
+                    ->label(__('testimonials.fields.content'))
                     ->required()
                     ->rows(5)
                     ->columnSpanFull(),
