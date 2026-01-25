@@ -2,10 +2,28 @@
 
 namespace App\Providers;
 
+use App\Models\Course;
+use App\Models\Permission;
+use App\Models\Role;
+use App\Policies\CoursePolicy;
+use App\Policies\PermissionPolicy;
+use App\Policies\RolePolicy;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
 {
+    /**
+     * The policy mappings for the application.
+     *
+     * @var array<class-string, class-string>
+     */
+    protected array $policies = [
+        Course::class => CoursePolicy::class,
+        Role::class => RolePolicy::class,
+        Permission::class => PermissionPolicy::class,
+    ];
+
     /**
      * Register any application services.
      */
@@ -19,6 +37,16 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        // Register policies
+        foreach ($this->policies as $model => $policy) {
+            Gate::policy($model, $policy);
+        }
+
+        // Super admin bypass - grant all permissions to super_admin role
+        Gate::before(function ($user, $ability) {
+            if ($user->hasRole('super_admin')) {
+                return true;
+            }
+        });
     }
 }
