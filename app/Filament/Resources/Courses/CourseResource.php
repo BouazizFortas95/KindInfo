@@ -31,6 +31,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\DB;
+use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 
 class CourseResource extends Resource
 {
@@ -137,11 +138,25 @@ class CourseResource extends Resource
                                             ->label(__('courses.lesson_description'))
                                             ->rows(3)
                                             ->maxLength(65535),
+
+                                        FileUpload::make('attachments')
+                                            ->label(__("courses.attachments"))
+                                            ->disk('public')
+                                            ->directory('courses/lessons/attachments')
+                                            ->preserveFilenames()  // Keep original filenames
+                                            ->visibility('public')  // Make files publicly accessible
+                                            ->multiple()  // If you need multiple files
+                                            ->downloadable()
+                                            ->openable()
+                                            ->reorderable()
+                                            ->storeFileNamesIn('attachments')  // This stores file paths
+                                            ->columnSpanFull(),
                                     ])
                                     ->columns(1)
                                     ->columnSpanFull()
                                     ->defaultItems(0)
                                     ->addActionLabel(__('courses.add_lesson')),
+
                             ]),
                     ])
                     ->columnSpanFull(),
@@ -156,21 +171,8 @@ class CourseResource extends Resource
                     ->label(__('courses.thumbnail'))
                     ->circular(),
 
-                // TextColumn::make('category.name')
-                //     ->label(__('courses.category'))
-                //     ->sortable()
-                //     ->searchable(query: function ($query, string $search) {
-                //         return $query->whereHas('category', function ($q) use ($search) {
-                //             $q->whereTranslationLike('name', "%{$search}%");
-                //         });
-                //     })
-                //     ->badge()
-                //     ->color('primary'),
-
-
                 TextColumn::make('category.name')
                     ->label(__('courses.category'))
-                    // 1. الترتيب اليدوي (حل مشكلة Error 1)
                     ->sortable(query: function ($query, string $direction) {
                         return $query->orderBy(
                             \App\Models\CategoryTranslation::select('name')
@@ -180,7 +182,6 @@ class CourseResource extends Resource
                             $direction
                         );
                     })
-                    // 2. البحث اليدوي
                     ->searchable(query: function ($query, string $search) {
                         return $query->whereHas('category', function ($q) use ($search) {
                             $q->whereTranslationLike('name', "%{$search}%");
@@ -257,6 +258,7 @@ class CourseResource extends Resource
                             $lessonData = [
                                 'id' => $lesson->id,
                                 'video_url' => $lesson->video_url,
+                                'attachments' => $lesson->attachments,
                                 'title' => '',
                                 'description' => '',
                             ];
@@ -311,6 +313,7 @@ class CourseResource extends Resource
                                     if ($lesson) {
                                         $lesson->video_url = $lessonData['video_url'] ?? '';
                                         $lesson->sort_order = $index;
+                                        $lesson->attachments = $lessonData['attachments'] ?? [];
 
                                         // Update lesson translation for current locale
                                         $lesson->translateOrNew($locale)->title = $lessonData['title'] ?? '';
@@ -325,6 +328,7 @@ class CourseResource extends Resource
                                     $lesson->course_id = $record->id;
                                     $lesson->video_url = $lessonData['video_url'] ?? '';
                                     $lesson->sort_order = $index;
+                                    $lesson->attachments = $lessonData['attachments'] ?? [];
 
                                     // Set lesson translation for current locale
                                     $lesson->translateOrNew($locale)->title = $lessonData['title'] ?? '';

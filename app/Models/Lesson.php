@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Astrotomic\Translatable\Contracts\Translatable;
 use Astrotomic\Translatable\Translatable as TranslatableTrait;
 use Illuminate\Database\Eloquent\Model;
@@ -11,19 +12,27 @@ class Lesson extends Model implements Translatable
 {
     use TranslatableTrait;
 
-    protected $fillable = [
-        'course_id',
-        'video_url',
-        'sort_order',
-    ];
+    protected $guarded = [];
 
     public array $translatedAttributes = [
         'title',
         'description',
     ];
 
+    protected $casts = [
+        'attachments' => 'array',
+    ];
+
+    // protected function attachments(): Attribute
+    // {
+    //     return Attribute::make(
+    //         get: fn($value) => json_decode($value, true) ?? [],
+    //         set: fn($value) => json_encode($value),
+    //     );
+    // }
+
     public function course(): BelongsTo
     {
-        return $this->belongsTo(Course::class);
+        return $this->belongsTo(Course::class, 'course_id', 'id');
     }
 }
