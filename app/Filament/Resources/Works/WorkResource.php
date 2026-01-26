@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Works;
 
 use App\Filament\Resources\Works\Pages\ManageWorks;
+use App\Models\Category;
 use App\Models\Work;
 use BackedEnum;
 use Filament\Actions\BulkActionGroup;
@@ -96,13 +97,13 @@ class WorkResource extends Resource
                     ->relationship('categories')
                     ->getSearchResultsUsing(
                         fn(string $search): array =>
-                        \App\Models\Category::whereTranslationLike('name', "%{$search}%")
+                        Category::whereTranslationLike('name', "%{$search}%")
                             ->limit(50)
                             ->get()
                             ->pluck('name', 'id')
                             ->toArray()
                     )
-                    ->getOptionLabelFromRecordUsing(fn(\App\Models\Category $record) => $record->name ?? $record->translations->first()?->name ?? 'No Name')
+                    ->getOptionLabelFromRecordUsing(fn(Category $record) => $record->name ?? $record->translations->first()?->name ?? 'No Name')
                     ->multiple()
                     ->preload()
                     ->searchable()

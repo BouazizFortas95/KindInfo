@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Courses;
 
 use App\Filament\Resources\Courses\Pages\ManageCourses;
+use App\Models\Category;
 use App\Models\Course;
 use App\Models\Lesson;
 use BackedEnum;
@@ -13,6 +14,7 @@ use Filament\Actions\EditAction;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Repeater;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -24,6 +26,7 @@ use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\App;
@@ -61,6 +64,23 @@ class CourseResource extends Resource
                                     ->directory('courses/thumbnails')
                                     ->image()
                                     ->imageEditor()
+                                    ->columnSpanFull(),
+
+                                Select::make('category_id')
+                                    ->label(__('courses.categories'))
+                                    ->relationship('category', 'id')
+                                    ->getSearchResultsUsing(
+                                        fn(string $search): array =>
+                                        Category::whereTranslationLike('name', "%{$search}%")
+                                            ->limit(50)
+                                            ->get()
+                                            ->mapWithKeys(fn($item) => [$item->id => $item->name])
+                                            ->toArray()
+                                    )
+                                    ->getOptionLabelFromRecordUsing(fn(Category $record) => $record->name ?? '-')
+                                    ->preload()
+                                    ->searchable()
+                                    ->required()
                                     ->columnSpanFull(),
 
                                 TextInput::make('price')
@@ -136,6 +156,39 @@ class CourseResource extends Resource
                     ->label(__('courses.thumbnail'))
                     ->circular(),
 
+                // TextColumn::make('category.name')
+                //     ->label(__('courses.category'))
+                //     ->sortable()
+                //     ->searchable(query: function ($query, string $search) {
+                //         return $query->whereHas('category', function ($q) use ($search) {
+                //             $q->whereTranslationLike('name', "%{$search}%");
+                //         });
+                //     })
+                //     ->badge()
+                //     ->color('primary'),
+
+
+                TextColumn::make('category.name')
+                    ->label(__('courses.category'))
+                    // 1. الترتيب اليدوي (حل مشكلة Error 1)
+                    ->sortable(query: function ($query, string $direction) {
+                        return $query->orderBy(
+                            \App\Models\CategoryTranslation::select('name')
+                                ->whereColumn('category_translations.category_id', 'courses.category_id')
+                                ->where('category_translations.locale', app()->getLocale())
+                                ->limit(1),
+                            $direction
+                        );
+                    })
+                    // 2. البحث اليدوي
+                    ->searchable(query: function ($query, string $search) {
+                        return $query->whereHas('category', function ($q) use ($search) {
+                            $q->whereTranslationLike('name', "%{$search}%");
+                        });
+                    })
+                    ->badge()
+                    ->color('info'),
+
                 TextColumn::make('title')
                     ->label(__('courses.title'))
                     ->state(fn(Course $record): ?string => $record->translate(App::getLocale())?->title ?? $record->translations->first()?->title)
@@ -165,7 +218,18 @@ class CourseResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                //
+                SelectFilter::make('category_id')
+                    ->label(__('courses.category'))
+                    ->relationship('category', 'id')
+                    // لجلب الأسماء المترجمة في قائمة الفلتر
+                    ->getOptionLabelFromRecordUsing(fn($record) => $record->name)
+                    ->searchable()
+                    ->preload(),
+                SelectFilter::make('is_active')->label(__('courses.active'))
+                    ->options([
+                        1 => __('courses.active'),
+                        0 => __('courses.inactive'),
+                    ]),
             ])
             ->recordActions([
                 EditAction::make()

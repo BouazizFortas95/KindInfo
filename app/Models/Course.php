@@ -5,17 +5,14 @@ namespace App\Models;
 use Astrotomic\Translatable\Contracts\Translatable;
 use Astrotomic\Translatable\Translatable as TranslatableTrait;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Course extends Model implements Translatable
 {
     use TranslatableTrait;
 
-    protected $fillable = [
-        'thumbnail',
-        'price',
-        'is_active',
-    ];
+    protected $guarded = [];
 
     protected $casts = [
         'price' => 'decimal:2',
@@ -30,5 +27,10 @@ class Course extends Model implements Translatable
     public function lessons(): HasMany
     {
         return $this->hasMany(Lesson::class)->orderBy('sort_order');
+    }
+
+    public function category(): BelongsTo
+    {
+        return $this->belongsTo(Category::class, 'category_id');
     }
 }

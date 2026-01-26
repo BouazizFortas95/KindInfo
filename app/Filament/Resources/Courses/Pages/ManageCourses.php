@@ -9,6 +9,7 @@ use Filament\Actions\CreateAction;
 use Filament\Resources\Pages\ManageRecords;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class ManageCourses extends ManageRecords
 {
@@ -25,12 +26,15 @@ class ManageCourses extends ManageRecords
 
                         // Create course with main data
                         $record = new Course();
+                        $record->category_id = $data['category_id'] ?? null;
                         $record->thumbnail = $data['thumbnail'] ?? null;
                         $record->price = $data['price'] ?? 0;
                         $record->is_active = $data['is_active'] ?? true;
 
+
                         // Set course translation for current locale
                         $record->translateOrNew($locale)->title = $data['title'] ?? '';
+                        $record->translateOrNew($locale)->slug = Str::slug($data['title']) ?? '';
                         $record->translateOrNew($locale)->description = $data['description'] ?? null;
 
                         $record->save();
