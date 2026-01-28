@@ -10,7 +10,6 @@ use Filament\Http\Middleware\DispatchServingFilamentEvent;
 use Filament\Pages\Dashboard;
 use Filament\Panel;
 use Filament\PanelProvider;
-use Filament\Schemas\Components\Livewire;
 use Filament\Support\Colors\Color;
 use Filament\Widgets\AccountWidget;
 use Filament\Widgets\FilamentInfoWidget;
@@ -19,29 +18,27 @@ use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
-use Illuminate\Support\Facades\Blade;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
+use Illuminate\Support\Facades\Blade;
 
-class AdminPanelProvider extends PanelProvider
+class AuthPanelProvider extends PanelProvider
 {
     public function panel(Panel $panel): Panel
     {
         return $panel
-            ->default()
-            ->id('admin')
-            ->path('admin')
-            ->login()
+            ->id('auth')
+            ->path('auth')
             ->colors([
-                'primary' => Color::Indigo,
+                'primary' => Color::Sky,
             ])
             ->brandLogo(fn() => view('filament.logo'))
             ->brandLogoHeight('2.5rem')
-            ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
-            ->discoverPages(in: app_path('Filament/Pages'), for: 'App\Filament\Pages')
+            ->discoverResources(in: app_path('Filament/Auth/Resources'), for: 'App\Filament\Auth\Resources')
+            ->discoverPages(in: app_path('Filament/Auth/Pages'), for: 'App\Filament\Auth\Pages')
             ->pages([
                 Dashboard::class,
             ])
-            ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\Filament\Widgets')
+            ->discoverWidgets(in: app_path('Filament/Auth/Widgets'), for: 'App\Filament\Auth\Widgets')
             ->widgets([
                 AccountWidget::class,
                 FilamentInfoWidget::class,
@@ -59,7 +56,7 @@ class AdminPanelProvider extends PanelProvider
                 SetLocaleFromSession::class,
             ])->renderHook(
                 'panels::global-search.after',
-                fn() => Blade::render('<livewire:language-switcher />'),
+                fn() =>  Blade::render('<livewire:language-switcher />'),
             )
             ->authMiddleware([
                 Authenticate::class,

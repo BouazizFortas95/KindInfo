@@ -18,4 +18,5 @@ return [
     'add_lesson' => 'Ajouter une leçon',
     'lessons_count' => 'Leçons',
     'created_at' => 'Créé le',
+    'attachments_download' => 'Pièces jointes (Cliquez pour télécharger)',
 ];
