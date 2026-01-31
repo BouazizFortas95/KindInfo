@@ -4,8 +4,7 @@ use Livewire\Volt\Component;
 use App\Models\Course;
 use Illuminate\Support\Facades\Storage;
 
-new class extends Component
-{
+new class extends Component {
     public Course $course;
     public $activeLesson;
     public $watchedLessons = [];
@@ -15,9 +14,11 @@ new class extends Component
     public $theaterMode = false;
     public $currentTime = 0;
     public $duration = 0;
+    public $localeDirection = 'ltr';
 
     public function mount(Course $course)
     {
+        $this->localeDirection = \Mcamara\LaravelLocalization\Facades\LaravelLocalization::getCurrentLocaleDirection();
         $this->course = $course->load(['lessons.translations', 'translations']);
         $this->activeLesson = $this->course->lessons()->with('translations')->first();
         $this->loadUserProgress();
@@ -30,7 +31,7 @@ new class extends Component
         $this->dispatch('lesson-changed', [
             'lessonId' => $id,
             'videoUrl' => $this->activeLesson->video_url,
-            'autoPlay' => $this->autoPlay
+            'autoPlay' => $this->autoPlay,
         ]);
     }
 
@@ -125,7 +126,8 @@ new class extends Component
     }
 }; ?>
 
-<div style="background: linear-gradient(135deg, rgba(2, 77, 253, 0.192) 0%, rgba(4, 134, 173, 0.274) 50%, rgba(0, 25, 58, 0.123) 10%); min-height: 100vh;" dir="{{ LaravelLocalization::getCurrentLocaleDirection() }}">
+<div style="background: linear-gradient(135deg, rgba(2, 77, 253, 0.192) 0%, rgba(4, 134, 173, 0.274) 50%, rgba(0, 25, 58, 0.123) 10%); min-height: 100vh; direction: {{ $localeDirection }} !important;"
+    dir="{{ $localeDirection }}">
     <style>
         .video-container {
             background: #000;
@@ -379,8 +381,15 @@ new class extends Component
         }
 
         @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
         }
 
         /* Enhanced RTL Support */
@@ -406,7 +415,7 @@ new class extends Component
             order: 1;
         }
 
-        [dir="rtl"] .video-controls > div {
+        [dir="rtl"] .video-controls>div {
             flex-direction: row-reverse;
         }
 
@@ -440,7 +449,7 @@ new class extends Component
             .grid-container {
                 grid-template-columns: 3fr 1fr !important;
             }
-            
+
             [dir="rtl"] .grid-container {
                 grid-template-columns: 1fr 3fr !important;
             }
@@ -474,32 +483,35 @@ new class extends Component
             <div class="main-video-area" style="display: flex; flex-direction: column; gap: 1.5rem;">
                 <!-- Video Player -->
                 <div class="video-container {{ $theaterMode ? 'theater-mode' : '' }}" style="position: relative;">
-                    @if($activeLesson && $activeLesson->video_url)
+                    @if ($activeLesson && $activeLesson->video_url)
                         <iframe id="video-player"
-                                src="{{ str_replace('watch?v=', 'embed/', $activeLesson->video_url) }}?enablejsapi=1&autoplay={{ $autoPlay ? 1 : 0 }}"
-                                style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0;"
-                                allowfullscreen></iframe>
+                            src="{{ str_replace('watch?v=', 'embed/', $activeLesson->video_url) }}?enablejsapi=1&autoplay={{ $autoPlay ? 1 : 0 }}"
+                            style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0;"
+                            allowfullscreen></iframe>
 
                         <!-- Enhanced Video Controls -->
                         <div class="video-controls">
                             <!-- Progress Bar -->
                             <div class="progress-bar" onclick="seekVideo(event)">
-                                <div class="progress-fill" style="width: {{ $duration > 0 ? ($currentTime / $duration * 100) : 0 }}%"></div>
+                                <div class="progress-fill"
+                                    style="width: {{ $duration > 0 ? ($currentTime / $duration) * 100 : 0 }}%"></div>
                             </div>
 
                             <!-- Control Buttons -->
                             <div style="display: flex; align-items: center; justify-content: between; width: 100%;">
                                 <!-- Left Controls -->
                                 <div style="display: flex; align-items: center; gap: 0.5rem;">
-                                    <button wire:click="playPreviousLesson" class="control-button" title="{{ __('courses.previous_lesson') }}">
+                                    <button wire:click="playPreviousLesson" class="control-button"
+                                        title="{{ __('courses.previous_lesson') }}">
                                         <svg style="width: 1rem; height: 1rem;" fill="currentColor" viewBox="0 0 24 24">
-                                            <path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/>
+                                            <path d="M6 6h2v12H6zm3.5 6l8.5 6V6z" />
                                         </svg>
                                     </button>
 
-                                    <button wire:click="playNextLesson" class="control-button" title="{{ __('courses.next_lesson') }}">
+                                    <button wire:click="playNextLesson" class="control-button"
+                                        title="{{ __('courses.next_lesson') }}">
                                         <svg style="width: 1rem; height: 1rem;" fill="currentColor" viewBox="0 0 24 24">
-                                            <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/>
+                                            <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z" />
                                         </svg>
                                     </button>
                                 </div>
@@ -512,18 +524,26 @@ new class extends Component
                                 <!-- Right Controls -->
                                 <div style="display: flex; align-items: center; gap: 0.5rem;">
                                     <!-- Playback Speed -->
-                                    <select wire:change="setPlaybackSpeed($event.target.value)" class="control-button" style="background: rgba(255, 255, 255, 0.1); border: none; color: white;">
-                                        <option value="0.5" {{ $playbackSpeed == 0.5 ? 'selected' : '' }}>0.5x</option>
-                                        <option value="0.75" {{ $playbackSpeed == 0.75 ? 'selected' : '' }}>0.75x</option>
+                                    <select wire:change="setPlaybackSpeed($event.target.value)" class="control-button"
+                                        style="background: rgba(255, 255, 255, 0.1); border: none; color: white;">
+                                        <option value="0.5" {{ $playbackSpeed == 0.5 ? 'selected' : '' }}>0.5x
+                                        </option>
+                                        <option value="0.75" {{ $playbackSpeed == 0.75 ? 'selected' : '' }}>0.75x
+                                        </option>
                                         <option value="1" {{ $playbackSpeed == 1 ? 'selected' : '' }}>1x</option>
-                                        <option value="1.25" {{ $playbackSpeed == 1.25 ? 'selected' : '' }}>1.25x</option>
-                                        <option value="1.5" {{ $playbackSpeed == 1.5 ? 'selected' : '' }}>1.5x</option>
+                                        <option value="1.25" {{ $playbackSpeed == 1.25 ? 'selected' : '' }}>1.25x
+                                        </option>
+                                        <option value="1.5" {{ $playbackSpeed == 1.5 ? 'selected' : '' }}>1.5x
+                                        </option>
                                         <option value="2" {{ $playbackSpeed == 2 ? 'selected' : '' }}>2x</option>
                                     </select>
 
-                                    <button wire:click="toggleTheaterMode" class="control-button" title="{{ __('courses.theater_mode') }}">
-                                        <svg style="width: 1rem; height: 1rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                                    <button wire:click="toggleTheaterMode" class="control-button"
+                                        title="{{ __('courses.theater_mode') }}">
+                                        <svg style="width: 1rem; height: 1rem;" fill="none" stroke="currentColor"
+                                            viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
                                         </svg>
                                     </button>
                                 </div>
@@ -532,19 +552,23 @@ new class extends Component
                     @else
                         <div style="display: flex; align-items: center; justify-content: center; height: 100%;">
                             <div style="text-align: center;">
-                                <svg style="width: 4rem; height: 4rem; margin: 0 auto 1rem auto; color: rgb(107, 114, 128);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1.5a1.5 1.5 0 011.5 1.5M12 5a7 7 0 717 7 7 7 0 01-7 7 7 7 0 01-7-7 7 7 0 017-7z" />
+                                <svg style="width: 4rem; height: 4rem; margin: 0 auto 1rem auto; color: rgb(107, 114, 128);"
+                                    fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1.5a1.5 1.5 0 011.5 1.5M12 5a7 7 0 717 7 7 7 0 01-7 7 7 7 0 01-7-7 7 7 0 017-7z" />
                                 </svg>
-                                <p style="color: rgb(156, 163, 175); font-size: 1.125rem;">{{ __('courses.select_lesson_to_begin') }}</p>
+                                <p style="color: rgb(156, 163, 175); font-size: 1.125rem;">
+                                    {{ __('courses.select_lesson_to_begin') }}</p>
                             </div>
                         </div>
                     @endif
                 </div>
 
                 <!-- Settings Panel -->
-                @if(!$theaterMode)
+                @if (!$theaterMode)
                     <div class="settings-panel">
-                        <h4 style="color: white; font-weight: bold; margin-bottom: 1rem;">{{ __('courses.player_settings') }}</h4>
+                        <h4 style="color: white; font-weight: bold; margin-bottom: 1rem;">
+                            {{ __('courses.player_settings') }}</h4>
 
                         <div class="setting-item">
                             <span style="color: rgb(209, 213, 219);">{{ __('courses.auto_play_next_lesson') }}</span>
@@ -561,7 +585,8 @@ new class extends Component
                         <div class="setting-item">
                             <span style="color: rgb(209, 213, 219);">{{ __('courses.course_progress') }}</span>
                             <span style="color: rgb(34, 197, 94); font-weight: 500;">
-                                {{ count($watchedLessons) }}/{{ $course->lessons->count() }} {{ __('courses.completed') }}
+                                {{ count($watchedLessons) }}/{{ $course->lessons->count() }}
+                                {{ __('courses.completed') }}
                             </span>
                         </div>
                     </div>
@@ -574,7 +599,7 @@ new class extends Component
                             {{ $activeLesson->title ?? 'Welcome to the Course' }}
                         </h1>
 
-                        @if($activeLesson && $activeLesson->description)
+                        @if ($activeLesson && $activeLesson->description)
                             <p style="color: rgb(209, 213, 219); font-size: 1.125rem; line-height: 1.75;">
                                 {{ $activeLesson->description }}
                             </p>
@@ -582,20 +607,25 @@ new class extends Component
                     </div>
 
                     <!-- Attachments -->
-                    @if($activeLesson && !empty($activeLesson->attachments))
+                    @if ($activeLesson && !empty($activeLesson->attachments))
                         <div style="border-top: 1px solid rgb(31, 41, 55); padding-top: 1.5rem; margin-top: 1.5rem;">
-                            <h3 style="font-size: 1.125rem; font-weight: 600; color: white; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
-                                <svg style="width: 1.25rem; height: 1.25rem; color: rgb(96, 165, 250);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                            <h3
+                                style="font-size: 1.125rem; font-weight: 600; color: white; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+                                <svg style="width: 1.25rem; height: 1.25rem; color: rgb(96, 165, 250);" fill="none"
+                                    stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
                                 </svg>
                                 {{ __('courses.course_resources') }}
                             </h3>
 
                             <div style="display: flex; flex-wrap: wrap; gap: 0.75rem;">
-                                @foreach($activeLesson->attachments as $file)
+                                @foreach ($activeLesson->attachments as $file)
                                     <a href="{{ Storage::url($file) }}" target="_blank" class="attachment-button">
-                                        <svg style="width: 1.25rem; height: 1.25rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                        <svg style="width: 1.25rem; height: 1.25rem;" fill="none"
+                                            stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                         </svg>
                                         {{ basename($file) }}
                                     </a>
@@ -610,9 +640,12 @@ new class extends Component
             <div class="sidebar-container">
                 <!-- Sidebar Header -->
                 <div class="sidebar-header">
-                    <h3 style="font-weight: bold; color: white; display: flex; align-items: center; gap: 0.5rem; font-size: 1.125rem;">
-                        <svg style="width: 1.25rem; height: 1.25rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                    <h3
+                        style="font-weight: bold; color: white; display: flex; align-items: center; gap: 0.5rem; font-size: 1.125rem;">
+                        <svg style="width: 1.25rem; height: 1.25rem;" fill="none" stroke="currentColor"
+                            viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                         </svg>
                         {{ __('courses.course_curriculum') }}
                     </h3>
@@ -623,36 +656,42 @@ new class extends Component
 
                 <!-- Lessons List -->
                 <div style="max-height: 37.5rem; overflow-y: auto;">
-                    @foreach($course->lessons as $index => $lesson)
+                    @foreach ($course->lessons as $index => $lesson)
                         @php
                             $isActive = $activeLesson && $activeLesson->id === $lesson->id;
                             $isCompleted = $this->isLessonCompleted($lesson->id);
                             $progress = $this->getLessonProgress($lesson->id);
                         @endphp
 
-                        <button
-                            wire:click="selectLesson({{ $lesson->id }})"
+                        <button wire:click="selectLesson({{ $lesson->id }})"
                             class="lesson-item {{ $isActive ? 'active' : '' }} {{ $isCompleted ? 'completed' : '' }}">
 
                             <!-- Progress Bar -->
                             <div class="lesson-progress-bar" style="width: {{ $progress }}%"></div>
 
-                            <div class="lesson-item-content" style="display: flex; align-items: flex-start; gap: 0.75rem;">
+                            <div class="lesson-item-content"
+                                style="display: flex; align-items: flex-start; gap: 0.75rem;">
                                 <!-- Lesson Number & Play Icon -->
                                 <div class="lesson-number-container" style="flex-shrink: 0; position: relative;">
-                                    @if($isActive)
+                                    @if ($isActive)
                                         <div class="lesson-number active">
-                                            <svg style="width: 1.25rem; height: 1.25rem;" fill="currentColor" viewBox="0 0 24 24">
-                                                <path d="M8 5v14l11-7z"/>
+                                            <svg style="width: 1.25rem; height: 1.25rem;" fill="currentColor"
+                                                viewBox="0 0 24 24">
+                                                <path d="M8 5v14l11-7z" />
                                             </svg>
                                         </div>
                                         <div style="position: absolute; top: -0.25rem; right: -0.25rem;">
-                                            <div style="width: 0.75rem; height: 0.75rem; background: rgb(74, 222, 128); border-radius: 50%; animation: pulse 2s infinite;"></div>
+                                            <div
+                                                style="width: 0.75rem; height: 0.75rem; background: rgb(74, 222, 128); border-radius: 50%; animation: pulse 2s infinite;">
+                                            </div>
                                         </div>
                                     @elseif($isCompleted)
                                         <div class="lesson-number completed">
-                                            <svg style="width: 1rem; height: 1rem;" fill="currentColor" viewBox="0 0 20 20">
-                                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                                            <svg style="width: 1rem; height: 1rem;" fill="currentColor"
+                                                viewBox="0 0 20 20">
+                                                <path fill-rule="evenodd"
+                                                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                                    clip-rule="evenodd" />
                                             </svg>
                                         </div>
                                     @else
@@ -661,10 +700,12 @@ new class extends Component
                                         </div>
                                     @endif
 
-                                    @if($isCompleted && !$isActive)
+                                    @if ($isCompleted && !$isActive)
                                         <div class="completion-badge">
                                             <svg style="width: 8px; height: 8px;" fill="white" viewBox="0 0 20 20">
-                                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                                                <path fill-rule="evenodd"
+                                                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                                    clip-rule="evenodd" />
                                             </svg>
                                         </div>
                                     @endif
@@ -672,34 +713,44 @@ new class extends Component
 
                                 <!-- Lesson Details -->
                                 <div class="lesson-details" style="flex: 1; min-width: 0;">
-                                    <h4 style="font-weight: 600; font-size: 0.875rem; line-height: 1.25; margin-bottom: 0.25rem;
+                                    <h4
+                                        style="font-weight: 600; font-size: 0.875rem; line-height: 1.25; margin-bottom: 0.25rem;
                                               color: {{ $isActive ? 'rgb(96, 165, 250)' : ($isCompleted ? 'rgb(34, 197, 94)' : 'rgb(229, 231, 235)') }};">
                                         {{ $lesson->title }}
                                     </h4>
 
-                                    @if($isActive)
-                                        <div style="display: flex; align-items: center; gap: 0.25rem; font-size: 0.75rem;">
-                                            <span style="color: rgb(74, 222, 128); font-weight: 500;">● {{ strtoupper(__('courses.playing_now')) }}</span>
+                                    @if ($isActive)
+                                        <div
+                                            style="display: flex; align-items: center; gap: 0.25rem; font-size: 0.75rem;">
+                                            <span style="color: rgb(74, 222, 128); font-weight: 500;">●
+                                                {{ strtoupper(__('courses.playing_now')) }}</span>
                                         </div>
                                     @elseif($isCompleted)
-                                        <div style="display: flex; align-items: center; gap: 0.25rem; font-size: 0.75rem;">
-                                            <span style="color: rgb(34, 197, 94); font-weight: 500;">✓ {{ strtoupper(__('courses.completed')) }}</span>
+                                        <div
+                                            style="display: flex; align-items: center; gap: 0.25rem; font-size: 0.75rem;">
+                                            <span style="color: rgb(34, 197, 94); font-weight: 500;">✓
+                                                {{ strtoupper(__('courses.completed')) }}</span>
                                         </div>
                                     @else
-                                        <div style="display: flex; align-items: center; justify-content: space-between; font-size: 0.75rem; color: rgb(107, 114, 128);">
+                                        <div
+                                            style="display: flex; align-items: center; justify-content: space-between; font-size: 0.75rem; color: rgb(107, 114, 128);">
                                             <div style="display: flex; align-items: center; gap: 0.5rem;">
-                                                @if(!empty($lesson->attachments))
+                                                @if (!empty($lesson->attachments))
                                                     <span style="display: flex; align-items: center; gap: 0.25rem;">
-                                                        <svg style="width: 0.75rem; height: 0.75rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                                                        <svg style="width: 0.75rem; height: 0.75rem;" fill="none"
+                                                            stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round"
+                                                                stroke-width="2"
+                                                                d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
                                                         </svg>
                                                         {{ count($lesson->attachments) }}
                                                     </span>
                                                 @endif
                                             </div>
 
-                                            @if($progress > 0 && $progress < 100)
-                                                <span style="color: rgb(59, 130, 246); font-weight: 500;">{{ round($progress) }}%</span>
+                                            @if ($progress > 0 && $progress < 100)
+                                                <span
+                                                    style="color: rgb(59, 130, 246); font-weight: 500;">{{ round($progress) }}%</span>
                                             @endif
                                         </div>
                                     @endif
@@ -722,7 +773,7 @@ new class extends Component
             document.addEventListener('keydown', function(e) {
                 if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
 
-                switch(e.code) {
+                switch (e.code) {
                     case 'Space':
                         e.preventDefault();
                         togglePlayPause();
@@ -844,33 +895,33 @@ new class extends Component
             // Preserve RTL direction after Livewire updates
             function preserveRTLLayout() {
                 const container = document.querySelector('[data-direction]');
-                const currentDir = container?.getAttribute('data-direction') || 
-                                 document.documentElement.getAttribute('dir') || 
-                                 document.querySelector('[dir]')?.getAttribute('dir');
-                
+                const currentDir = container?.getAttribute('data-direction') ||
+                    document.documentElement.getAttribute('dir') ||
+                    document.querySelector('[dir]')?.getAttribute('dir');
+
                 console.log('Current direction:', currentDir);
-                
+
                 if (currentDir === 'rtl') {
                     // Force RTL layout preservation
                     const gridContainer = document.querySelector('.grid-container');
                     const sidebar = document.querySelector('.sidebar-container');
                     const mainArea = document.querySelector('.main-video-area');
-                    
+
                     if (gridContainer && sidebar && mainArea) {
                         console.log('Applying RTL layout...');
-                        
+
                         // Ensure RTL grid layout with important declarations
                         gridContainer.style.setProperty('grid-template-columns', '1fr 3fr', 'important');
                         sidebar.style.setProperty('order', '1', 'important');
                         sidebar.style.setProperty('grid-column', '1', 'important');
                         mainArea.style.setProperty('order', '2', 'important');
                         mainArea.style.setProperty('grid-column', '2', 'important');
-                        
+
                         // Add RTL class for additional styling
                         gridContainer.classList.add('rtl-layout');
                         sidebar.classList.add('rtl-sidebar');
                         mainArea.classList.add('rtl-main');
-                        
+
                         console.log('RTL layout applied successfully');
                     }
                 } else {
@@ -897,31 +948,31 @@ new class extends Component
         Livewire.hook('message.processed', (message, component) => {
             setTimeout(() => {
                 const container = document.querySelector('[data-direction]');
-                const currentDir = container?.getAttribute('data-direction') || 
-                                 document.documentElement.getAttribute('dir') || 
-                                 document.querySelector('[dir]')?.getAttribute('dir');
-                
+                const currentDir = container?.getAttribute('data-direction') ||
+                    document.documentElement.getAttribute('dir') ||
+                    document.querySelector('[dir]')?.getAttribute('dir');
+
                 console.log('Livewire hook - Current direction:', currentDir);
-                
+
                 if (currentDir === 'rtl') {
                     const gridContainer = document.querySelector('.grid-container');
                     const sidebar = document.querySelector('.sidebar-container');
                     const mainArea = document.querySelector('.main-video-area');
-                    
+
                     if (gridContainer && sidebar && mainArea) {
                         console.log('Livewire hook - Forcing RTL layout...');
-                        
+
                         gridContainer.style.setProperty('grid-template-columns', '1fr 3fr', 'important');
                         sidebar.style.setProperty('order', '1', 'important');
                         sidebar.style.setProperty('grid-column', '1', 'important');
                         mainArea.style.setProperty('order', '2', 'important');
                         mainArea.style.setProperty('grid-column', '2', 'important');
-                        
+
                         // Also add classes
                         gridContainer.classList.add('rtl-layout');
                         sidebar.classList.add('rtl-sidebar');
                         mainArea.classList.add('rtl-main');
-                        
+
                         console.log('Livewire hook - RTL layout forced successfully');
                     }
                 }

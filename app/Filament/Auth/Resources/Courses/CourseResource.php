@@ -2,13 +2,10 @@
 
 namespace App\Filament\Auth\Resources\Courses;
 
-use App\Filament\Auth\Resources\Courses\Pages\CreateCourse;
-use App\Filament\Auth\Resources\Courses\Pages\EditCourse;
 use App\Filament\Auth\Resources\Courses\Pages\ListCourses;
 use App\Filament\Auth\Resources\Courses\Pages\ViewCourse;
 use App\Filament\Auth\Resources\Courses\Schemas\CourseForm;
 use App\Filament\Auth\Resources\Courses\Schemas\CourseInfolist;
-use App\Filament\Auth\Resources\Courses\Tables\CoursesTable;
 use App\Models\Course;
 use BackedEnum;
 use Filament\Actions\ViewAction;
@@ -23,7 +20,22 @@ class CourseResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
 
-    protected static ?string $recordTitleAttribute = 'Courses';
+    protected static ?string $recordTitleAttribute = null;
+
+    public static function getModelLabel(): string
+    {
+        return __('courses.course');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('courses.courses');
+    }
+
+    public static function getNavigationLabel(): string
+    {
+        return __('courses.courses');
+    }
 
     public static function form(Schema $schema): Schema
     {
@@ -37,11 +49,10 @@ class CourseResource extends Resource
 
     public static function table(Table $table): Table
     {
-        // return CoursesTable::configure($table);
         return $table
-        ->actions([
-            ViewAction::make(), // هذا الزر سيفتح الصفحة التي برمجناها للتو
-        ]);
+            ->actions([
+                ViewAction::make(), // هذا الزر سيفتح الصفحة التي برمجناها للتو
+            ]);
     }
 
     public static function getRelations(): array
@@ -55,9 +66,9 @@ class CourseResource extends Resource
     {
         return [
             'index' => ListCourses::route('/'),
-            'create' => CreateCourse::route('/create'),
+            // 'create' => CreateCourse::route('/create'),
             'view' => ViewCourse::route('/{record}'),
-            'edit' => EditCourse::route('/{record}/edit'),
+            // 'edit' => EditCourse::route('/{record}/edit'),
         ];
     }
 }

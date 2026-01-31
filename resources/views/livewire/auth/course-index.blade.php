@@ -19,38 +19,39 @@ new class extends Component {
     public string $difficultyFilter = 'all';
     public int $minLessons = 0;
     public bool $showFilters = false;
+    public string $localeDirection = 'ltr';
 
     public function mount()
     {
+        $this->localeDirection = \Mcamara\LaravelLocalization\Facades\LaravelLocalization::getCurrentLocaleDirection();
         $this->loadUserProgress();
     }
 
     public function getCourses(): LengthAwarePaginator
     {
         $query = Course::with(['lessons', 'translations', 'category']);
-        
+
         // Search functionality
         if (!empty($this->search)) {
-            $query->where(function($q) {
-                $q->whereTranslationLike('title', '%' . $this->search . '%')
-                  ->orWhereTranslationLike('description', '%' . $this->search . '%');
+            $query->where(function ($q) {
+                $q->whereTranslationLike('title', '%' . $this->search . '%')->orWhereTranslationLike('description', '%' . $this->search . '%');
             });
         }
-        
+
         // Category filter
         if (!empty($this->selectedCategories)) {
             $query->whereIn('category_id', $this->selectedCategories);
         }
-        
+
         // Lesson count filter
         if ($this->minLessons > 0) {
             $query->has('lessons', '>=', $this->minLessons);
         }
-        
+
         // Progress filter
         if ($this->progressFilter !== 'all') {
             $courseIds = array_keys($this->userProgress);
-            switch($this->progressFilter) {
+            switch ($this->progressFilter) {
                 case 'started':
                     $startedCourses = array_filter($this->userProgress, fn($progress) => $progress > 0 && $progress < 100);
                     $query->whereIn('id', array_keys($startedCourses));
@@ -65,35 +66,35 @@ new class extends Component {
                     break;
             }
         }
-        
+
         // Sorting
         $query->orderBy($this->sortBy, $this->sortDirection);
-        
+
         $courses = $query->paginate($this->perPage, ['*'], 'page', $this->getPage());
-        
+
         return $courses;
     }
-    
+
     public function updatedSearch()
     {
         $this->resetPage();
     }
-    
+
     public function updatedSelectedCategories()
     {
         $this->resetPage();
     }
-    
+
     public function updatedProgressFilter()
     {
         $this->resetPage();
     }
-    
+
     public function updatedMinLessons()
     {
         $this->resetPage();
     }
-    
+
     public function setSortBy($field)
     {
         if ($this->sortBy === $field) {
@@ -104,12 +105,12 @@ new class extends Component {
         }
         $this->resetPage();
     }
-    
+
     public function toggleFilters()
     {
         $this->showFilters = !$this->showFilters;
     }
-    
+
     public function clearFilters()
     {
         $this->search = '';
@@ -121,7 +122,7 @@ new class extends Component {
         $this->sortDirection = 'desc';
         $this->resetPage();
     }
-    
+
     public function getCategories()
     {
         return \App\Models\Category::with('translations')->get();
@@ -140,18 +141,7 @@ new class extends Component {
         }
 
         // Generate attractive gradient thumbnails with course info
-        $gradients = [
-            'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-            'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-            'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-            'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
-            'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
-            'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
-            'linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)',
-            'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)',
-            'linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%)',
-            'linear-gradient(135deg, #fad0c4 0%, #ffd1ff 100%)'
-        ];
+        $gradients = ['linear-gradient(135deg, #667eea 0%, #764ba2 100%)', 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)', 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)', 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)', 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)', 'linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)', 'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)', 'linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%)', 'linear-gradient(135deg, #fad0c4 0%, #ffd1ff 100%)'];
 
         $gradientIndex = abs(crc32($course->title)) % count($gradients);
         return $gradients[$gradientIndex];
@@ -159,11 +149,8 @@ new class extends Component {
 
     public function getCourseIcon($course)
     {
-        $icons = [
-            '📚', '🎓', '💻', '🔬', '🎨', '📖', '🏆', '⚡', '🚀', '💡',
-            '🎯', '📊', '🔧', '🎪', '🌟', '🎵', '📝', '🔍', '🎭', '🏃'
-        ];
-        
+        $icons = ['📚', '🎓', '💻', '🔬', '🎨', '📖', '🏆', '⚡', '🚀', '💡', '🎯', '📊', '🔧', '🎪', '🌟', '🎵', '📝', '🔍', '🎭', '🏃'];
+
         $iconIndex = abs(crc32($course->title)) % count($icons);
         return $icons[$iconIndex];
     }
@@ -195,7 +182,13 @@ new class extends Component {
     }
 }; ?>
 
-<div class="premium-courses-wrapper" dir="{{ LaravelLocalization::getCurrentLocaleDirection() }}">
+@php
+    $currentDir = $localeDirection;
+    $isRtl = $currentDir === 'rtl';
+@endphp
+
+<div class="premium-courses-wrapper {{ $isRtl ? 'rtl-enforced' : '' }}" dir="{{ $currentDir }}"
+    style="direction: {{ $currentDir }} !important;">
     <style>
         .premium-courses-wrapper {
             background: linear-gradient(135deg, rgba(2, 77, 253, 0.192) 0%, rgba(4, 134, 173, 0.274) 50%, rgba(0, 25, 58, 0.123) 100%) !important;
@@ -434,6 +427,17 @@ new class extends Component {
         }
 
         /* RTL Support */
+        .rtl-enforced {
+            direction: rtl !important;
+            text-align: right !important;
+        }
+
+        .rtl-enforced .sort-controls,
+        .rtl-enforced .filter-grid,
+        .rtl-enforced .filter-section {
+            direction: rtl !important;
+        }
+
         [dir="rtl"] .pagination-list {
             direction: rtl;
         }
@@ -463,6 +467,7 @@ new class extends Component {
             margin-left: auto;
             margin-right: auto;
             box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.1);
+            position: relative;
         }
 
         .search-input {
@@ -491,17 +496,17 @@ new class extends Component {
         }
 
         .search-icon {
-            position: absolute; 
-            left: 1rem; 
-            top: 50%; 
-            transform: translateY(-50%); 
-            width: 1.25rem; 
-            height: 1.25rem; 
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 1.25rem;
+            height: 1.25rem;
             color: rgb(156, 163, 175);
             transition: color 0.3s ease;
         }
 
-        .search-input:focus + .search-icon {
+        .search-input:focus+.search-icon {
             color: rgb(96, 165, 250);
         }
 
@@ -647,10 +652,10 @@ new class extends Component {
         }
 
         .filter-label {
-            display: block; 
-            color: rgb(229, 231, 235); 
-            font-size: 0.9rem; 
-            font-weight: 600; 
+            display: block;
+            color: rgb(229, 231, 235);
+            font-size: 0.9rem;
+            font-weight: 600;
             margin-bottom: 0.75rem;
             text-transform: uppercase;
             letter-spacing: 0.05em;
@@ -768,7 +773,7 @@ new class extends Component {
                 padding: 1.5rem;
                 border-radius: 1rem;
             }
-            
+
             .filter-grid {
                 grid-template-columns: 1fr !important;
                 gap: 1.5rem !important;
@@ -805,6 +810,19 @@ new class extends Component {
             order: 2;
             margin-right: 0;
             margin-left: 0.5rem;
+        }
+
+        [dir="rtl"] .filter-grid {
+            direction: rtl !important;
+        }
+
+        [dir="rtl"] .filter-label {
+            text-align: right !important;
+        }
+
+        [dir="rtl"] .filter-select,
+        [dir="rtl"] .filter-input {
+            text-align: right !important;
         }
 
         /* Select2 Custom Styling */
@@ -907,7 +925,7 @@ new class extends Component {
             z-index: 1050 !important;
         }
 
-        .select2-container .select2-results > .select2-results__options {
+        .select2-container .select2-results>.select2-results__options {
             max-height: 200px !important;
             overflow-y: auto !important;
         }
@@ -979,59 +997,65 @@ new class extends Component {
         .select2-results__options::-webkit-scrollbar-thumb:hover {
             background: rgba(59, 130, 246, 0.7);
         }
-
     </style>
 
-    <!-- Header -->
-    <div style="max-width: 80rem; margin: 0 auto 3rem auto; text-align: center;">
-        <h1 style="font-size: 2.25rem; font-weight: bold; color: white; margin-bottom: 1rem;">
-            @lang('courses.premium_courses')
-        </h1>
-        <p style="font-size: 1.125rem; color: #d1d5db; max-width: 42rem; margin: 0 auto;">
-            {{ __('courses.courses_subtitle') }}
-        </p>
-    </div>
+
 
     <!-- Search and Filter Section -->
-    <div class="search-filter-container">
+    <div class="search-filter-container {{ $isRtl ? 'rtl-enforced' : '' }}">
+        <!-- Header -->
+        <div style="max-width: 80rem; margin: 0 auto 3rem auto; text-align: center;">
+            <h1 style="font-size: 2.25rem; font-weight: bold; color: white; margin-bottom: 1rem;">
+                @lang('courses.premium_courses')
+            </h1>
+            <p style="font-size: 1.125rem; color: #d1d5db; max-width: 42rem; margin: 0 auto;">
+                {{ __('courses.courses_subtitle') }}
+            </p>
+        </div>
         <!-- Search Bar -->
         <div style="position: relative; margin-bottom: 2rem;">
-            <input wire:model.live.debounce.300ms="search" 
-                   type="text" 
-                   class="search-input" 
-                   placeholder="{{ __('courses.search_courses') }}">
+            <input wire:model.live.debounce.300ms="search" type="text" class="search-input"
+                placeholder="{{ __('courses.search_courses') }}">
             <svg class="search-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
         </div>
 
         <!-- Filter Toggle and Sort -->
-        <div class="sort-controls" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1.5rem; margin-bottom: 1.5rem;">
+        <div class="sort-controls"
+            style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1.5rem; margin-bottom: 1.5rem; direction: {{ $localeDirection }} !important;">
             <button wire:click="toggleFilters" class="filter-button {{ $showFilters ? 'active' : '' }}">
                 <svg style="width: 1.2rem; height: 1.2rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.207A1 1 0 013 6.5V4z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.207A1 1 0 013 6.5V4z" />
                 </svg>
                 {{ $showFilters ? __('courses.hide_filters') : __('courses.show_filters') }}
             </button>
-            
+
             <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
-                <span style="color: rgb(229, 231, 235); font-size: 0.9rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">{{ __('courses.sort_by') }}:</span>
+                <span
+                    style="color: rgb(229, 231, 235); font-size: 0.9rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">{{ __('courses.sort_by') }}:</span>
                 <div style="display: flex; gap: 0.75rem;">
-                    <button wire:click="setSortBy('created_at')" 
-                            class="sort-button {{ $sortBy === 'created_at' ? 'active' : '' }}">
+                    <button wire:click="setSortBy('created_at')"
+                        class="sort-button {{ $sortBy === 'created_at' ? 'active' : '' }}">
                         {{ __('courses.sort_newest') }}
-                        @if($sortBy === 'created_at')
+                        @if ($sortBy === 'created_at')
                             <svg style="width: 0.8rem; height: 0.8rem;" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="{{ $sortDirection === 'asc' ? 'M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z' : 'M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z' }}" clip-rule="evenodd" />
+                                <path fill-rule="evenodd"
+                                    d="{{ $sortDirection === 'asc' ? 'M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z' : 'M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z' }}"
+                                    clip-rule="evenodd" />
                             </svg>
                         @endif
                     </button>
-                    <button wire:click="setSortBy('title')" 
-                            class="sort-button {{ $sortBy === 'title' ? 'active' : '' }}">
+                    <button wire:click="setSortBy('title')"
+                        class="sort-button {{ $sortBy === 'title' ? 'active' : '' }}">
                         {{ __('courses.sort_title') }}
-                        @if($sortBy === 'title')
+                        @if ($sortBy === 'title')
                             <svg style="width: 0.8rem; height: 0.8rem;" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="{{ $sortDirection === 'asc' ? 'M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z' : 'M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z' }}" clip-rule="evenodd" />
+                                <path fill-rule="evenodd"
+                                    d="{{ $sortDirection === 'asc' ? 'M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z' : 'M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z' }}"
+                                    clip-rule="evenodd" />
                             </svg>
                         @endif
                     </button>
@@ -1040,19 +1064,24 @@ new class extends Component {
         </div>
 
         <!-- Advanced Filters (Collapsible) -->
-        @if($showFilters)
-            <div class="filter-section" style="border-top: 2px solid rgba(59, 130, 246, 0.2); padding-top: 2rem;" wire:ignore>
-                <div class="filter-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 2rem; margin-bottom: 2rem;">
+        @if ($showFilters)
+            <div class="filter-section" wire:key="filter-section-v1"
+                style="border-top: 2px solid rgba(59, 130, 246, 0.2); padding-top: 2rem;">
+                <div class="filter-grid"
+                    style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 2rem; margin-bottom: 2rem;">
                     <!-- Category Filter -->
                     <div>
                         <label class="filter-label">
                             {{ __('courses.categories') }}
                         </label>
-                        <select wire:model.live="selectedCategories" multiple class="filter-select" style="min-height: 120px;">
-                            @foreach($this->getCategories() as $category)
-                                <option value="{{ $category->id }}">{{ $category->name }}</option>
-                            @endforeach
-                        </select>
+                        <div wire:ignore wire:key="category-select-wrapper">
+                            <select wire:model.live="selectedCategories" multiple class="filter-select"
+                                style="min-height: 120px;">
+                                @foreach ($this->getCategories() as $category)
+                                    <option value="{{ $category->id }}">{{ $category->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
                     </div>
 
                     <!-- Progress Filter -->
@@ -1060,12 +1089,14 @@ new class extends Component {
                         <label class="filter-label">
                             {{ __('courses.progress_filter') }}
                         </label>
-                        <select wire:model.live="progressFilter" class="filter-select">
-                            <option value="all">{{ __('courses.all_progress') }}</option>
-                            <option value="not_started">{{ __('courses.not_started') }}</option>
-                            <option value="started">{{ __('courses.started') }}</option>
-                            <option value="completed">{{ __('courses.completed') }}</option>
-                        </select>
+                        <div wire:ignore wire:key="progress-select-wrapper">
+                            <select wire:model.live="progressFilter" class="filter-select">
+                                <option value="all">{{ __('courses.all_progress') }}</option>
+                                <option value="not_started">{{ __('courses.not_started') }}</option>
+                                <option value="started">{{ __('courses.started') }}</option>
+                                <option value="completed">{{ __('courses.completed') }}</option>
+                            </select>
+                        </div>
                     </div>
 
                     <!-- Lesson Count Filter -->
@@ -1073,40 +1104,42 @@ new class extends Component {
                         <label class="filter-label">
                             {{ __('courses.min_lessons') }}
                         </label>
-                        <input wire:model.live="minLessons" type="number" min="0" max="50" class="filter-input" placeholder="0">
+                        <input wire:model.live="minLessons" type="number" min="0" max="50"
+                            class="filter-input" placeholder="0">
                     </div>
                 </div>
 
                 <!-- Active Filters & Clear Button -->
-                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1.5rem; border-top: 1px solid rgba(75, 85, 99, 0.4); padding-top: 1.5rem;">
+                <div
+                    style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1.5rem; border-top: 1px solid rgba(75, 85, 99, 0.4); padding-top: 1.5rem;">
                     <div style="display: flex; flex-wrap: wrap; gap: 0.75rem;">
-                        @if(!empty($search))
+                        @if (!empty($search))
                             <span class="filter-chip">
                                 Search: "{{ $search }}"
                                 <button wire:click="$set('search', '')" type="button">×</button>
                             </span>
                         @endif
-                        @if(!empty($selectedCategories))
+                        @if (!empty($selectedCategories))
                             <span class="filter-chip">
                                 {{ count($selectedCategories) }} {{ __('courses.categories') }}
                                 <button wire:click="$set('selectedCategories', [])" type="button">×</button>
                             </span>
                         @endif
-                        @if($progressFilter !== 'all')
+                        @if ($progressFilter !== 'all')
                             <span class="filter-chip">
                                 {{ __('courses.' . $progressFilter) }}
                                 <button wire:click="$set('progressFilter', 'all')" type="button">×</button>
                             </span>
                         @endif
-                        @if($minLessons > 0)
+                        @if ($minLessons > 0)
                             <span class="filter-chip">
                                 {{ $minLessons }}+ {{ __('courses.lessons') }}
                                 <button wire:click="$set('minLessons', 0)" type="button">×</button>
                             </span>
                         @endif
                     </div>
-                    
-                    @if(!empty($search) || !empty($selectedCategories) || $progressFilter !== 'all' || $minLessons > 0)
+
+                    @if (!empty($search) || !empty($selectedCategories) || $progressFilter !== 'all' || $minLessons > 0)
                         <button wire:click="clearFilters" class="clear-filters-btn">
                             {{ __('courses.clear_filters') }}
                         </button>
@@ -1118,12 +1151,12 @@ new class extends Component {
 
     <!-- Course Grid -->
     @php $courses = $this->getCourses(); @endphp
-    
+
     <!-- Results Counter -->
     <div class="results-count">
         {{ $courses->total() }} {{ __('courses.results_found') }}
     </div>
-    
+
     @if ($courses->count() > 0)
         <div class="courses-grid">
             @foreach ($courses as $course)
@@ -1131,13 +1164,15 @@ new class extends Component {
                     <!-- Thumbnail Container -->
                     <div style="position: relative; aspect-ratio: 16/9; overflow: hidden;">
                         <div style="width: 100%; height: 100%; background: {{ $this->generateFakeThumbnail($course) }}; display: flex; align-items: center; justify-content: center; transition: transform 0.3s ease;"
-                             class="course-thumbnail">
+                            class="course-thumbnail">
                             <!-- Course Icon and Title Overlay -->
                             <div style="text-align: center; color: white; text-shadow: 0 2px 4px rgba(0,0,0,0.5);">
-                                <div style="font-size: 3rem; margin-bottom: 0.5rem; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));">
+                                <div
+                                    style="font-size: 3rem; margin-bottom: 0.5rem; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));">
                                     {{ $this->getCourseIcon($course) }}
                                 </div>
-                                <div style="font-size: 1rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.9; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                <div
+                                    style="font-size: 1rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.9; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
                                     {{ $course->title }}
                                 </div>
                             </div>
@@ -1169,7 +1204,8 @@ new class extends Component {
                             <div style="margin-bottom: 1.5rem;">
                                 <div
                                     style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                                    <span style="font-size: 0.75rem; color: #9ca3af;">{{ __('courses.progress') }}</span>
+                                    <span
+                                        style="font-size: 0.75rem; color: #9ca3af;">{{ __('courses.progress') }}</span>
                                     <span style="font-size: 0.75rem; color: #60a5fa; font-weight: 600;">
                                         {{ number_format($this->getCourseProgress($course->id), 0) }}%
                                     </span>
@@ -1208,7 +1244,7 @@ new class extends Component {
             <div
                 style="background: rgba(17, 24, 39, 0.6); border: 2px dashed #374151; border-radius: 2rem; padding: 3rem; text-align: center;">
                 <div style="margin-bottom: 1.5rem;">
-                    @if(!empty($search) || !empty($selectedCategories) || $progressFilter !== 'all' || $minLessons > 0)
+                    @if (!empty($search) || !empty($selectedCategories) || $progressFilter !== 'all' || $minLessons > 0)
                         <svg style="width: 5rem; height: 5rem; color: #6b7280; margin: 0 auto;" fill="none"
                             stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -1225,21 +1261,21 @@ new class extends Component {
                     @endif
                 </div>
                 <h3 style="font-size: 1.5rem; font-weight: bold; color: white; margin-bottom: 1rem;">
-                    @if(!empty($search) || !empty($selectedCategories) || $progressFilter !== 'all' || $minLessons > 0)
+                    @if (!empty($search) || !empty($selectedCategories) || $progressFilter !== 'all' || $minLessons > 0)
                         {{ __('courses.no_results') }}
                     @else
                         {{ __('courses.no_courses_available') }}
                     @endif
                 </h3>
                 <p style="color: #9ca3af; font-size: 1.125rem; margin-bottom: 2rem;">
-                    @if(!empty($search) || !empty($selectedCategories) || $progressFilter !== 'all' || $minLessons > 0)
+                    @if (!empty($search) || !empty($selectedCategories) || $progressFilter !== 'all' || $minLessons > 0)
                         {{ __('courses.try_different_search') }}
                     @else
                         {{ __('courses.no_courses_message') }}
                     @endif
                 </p>
-                
-                @if(!empty($search) || !empty($selectedCategories) || $progressFilter !== 'all' || $minLessons > 0)
+
+                @if (!empty($search) || !empty($selectedCategories) || $progressFilter !== 'all' || $minLessons > 0)
                     <button wire:click="clearFilters" class="filter-button" style="margin-top: 1rem;">
                         {{ __('courses.clear_filters') }}
                     </button>
@@ -1303,25 +1339,27 @@ new class extends Component {
             }
 
             function initializeEnhancements() {
-                // Wait for DOM and check if filters are visible
-                const waitForFilters = () => {
-                    const categorySelect = document.querySelector('select[wire\\:model\\.live="selectedCategories"]');
-                    const progressSelect = document.querySelector('select[wire\\:model\\.live="progressFilter"]');
-                    
-                    if (categorySelect && progressSelect && typeof jQuery !== 'undefined' && typeof jQuery.fn.select2 !== 'undefined') {
+                // Ensure direction is set on initialization
+                setupSelect2();
+
+                // Listen for Livewire updates to reinitialize
+                document.addEventListener('livewire:navigated', setupSelect2);
+                document.addEventListener('livewire:updated', function() {
+                    setTimeout(setupSelect2, 50);
+                });
+
+                // Backup observer for dynamic changes
+                const observer = new MutationObserver((mutations) => {
+                    if (document.querySelector('select[wire\\:model\\.live="selectedCategories"]') &&
+                        !document.querySelector('.select2-container')) {
                         setupSelect2();
-                        
-                        // Listen for Livewire updates to reinitialize
-                        document.addEventListener('livewire:navigated', setupSelect2);
-                        document.addEventListener('livewire:updated', function() {
-                            setTimeout(setupSelect2, 100);
-                        });
-                    } else {
-                        setTimeout(waitForFilters, 300);
                     }
-                };
-                
-                waitForFilters();
+                });
+
+                observer.observe(document.body, {
+                    childList: true,
+                    subtree: true
+                });
             }
 
             function setupSelect2() {
@@ -1340,23 +1378,25 @@ new class extends Component {
                     // Initialize category select with Select2
                     if (categorySelect.length > 0) {
                         categorySelect.select2({
-                            placeholder: '{{ __("courses.select_categories") }}',
+                            placeholder: '{{ __('courses.select_categories') }}',
                             allowClear: true,
                             multiple: true,
                             closeOnSelect: false,
                             width: '100%',
-                            dropdownParent: jQuery('.search-filter-container'),
+                            dir: '{{ $localeDirection }}',
                             language: {
                                 noResults: function() {
-                                    return '{{ __("courses.no_categories_found") }}';
+                                    return '{{ __('courses.no_categories_found') }}';
                                 },
                                 searching: function() {
-                                    return '{{ __("courses.searching") }}...';
+                                    return '{{ __('courses.searching') }}...';
                                 }
                             }
                         }).on('select2:select select2:unselect', function() {
                             // Trigger Livewire update
-                            const event = new Event('change', { bubbles: true });
+                            const event = new Event('change', {
+                                bubbles: true
+                            });
                             this.dispatchEvent(event);
                         });
                     }
@@ -1364,27 +1404,30 @@ new class extends Component {
                     // Initialize progress select with Select2
                     if (progressSelect.length > 0) {
                         progressSelect.select2({
-                            placeholder: '{{ __("courses.select_progress") }}',
+                            placeholder: '{{ __('courses.select_progress') }}',
                             allowClear: false,
                             width: '100%',
-                            dropdownParent: jQuery('.search-filter-container'),
+                            dir: '{{ $localeDirection }}',
                             minimumResultsForSearch: Infinity,
                             templateResult: function(option) {
                                 if (!option.id) return option.text;
-                                
+
                                 const icons = {
                                     'all': '📚',
-                                    'not_started': '⏱️', 
+                                    'not_started': '⏱️',
                                     'started': '▶️',
                                     'completed': '✅'
                                 };
-                                
+
                                 const icon = icons[option.id] || '';
-                                return jQuery('<span><span style="margin-right: 8px;">' + icon + '</span>' + option.text + '</span>');
+                                return jQuery('<span><span style="margin-right: 8px;">' + icon + '</span>' +
+                                    option.text + '</span>');
                             }
                         }).on('select2:select', function() {
                             // Trigger Livewire update
-                            const event = new Event('change', { bubbles: true });
+                            const event = new Event('change', {
+                                bubbles: true
+                            });
                             this.dispatchEvent(event);
                         });
                     }
