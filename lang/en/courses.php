@@ -70,4 +70,8 @@ return [
     'results_found' => 'results found',
     'no_results' => 'No courses match your search criteria',
     'try_different_search' => 'Try adjusting your search or filters',
+    'select_categories' => 'Select categories...',
+    'select_progress' => 'Select progress filter...',
+    'no_categories_found' => 'No categories found',
+    'searching' => 'Searching',
 ];

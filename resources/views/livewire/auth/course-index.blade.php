@@ -69,10 +69,7 @@ new class extends Component {
         // Sorting
         $query->orderBy($this->sortBy, $this->sortDirection);
         
-        $courses = $query->paginate($this->perPage);
-        
-        // Fix pagination URLs to prevent duplication
-        $courses->withPath(request()->getPathInfo());
+        $courses = $query->paginate($this->perPage, ['*'], 'page', $this->getPage());
         
         return $courses;
     }
@@ -400,6 +397,31 @@ new class extends Component {
             cursor: not-allowed;
         }
 
+        .pagination-link button {
+            all: unset;
+            display: inherit;
+            align-items: inherit;
+            justify-content: inherit;
+            min-width: inherit;
+            height: inherit;
+            padding: inherit;
+            border-radius: inherit;
+            font-size: inherit;
+            font-weight: inherit;
+            text-decoration: inherit;
+            transition: inherit;
+            background: inherit;
+            color: inherit;
+            border: inherit;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        .pagination-link[wire\:loading] {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
         .pagination-separator {
             background: transparent;
             border: none;
@@ -535,6 +557,60 @@ new class extends Component {
             min-width: 160px;
             transition: all 0.3s ease;
             box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Enhanced styling for multiple select */
+        .filter-select[multiple] {
+            min-height: 120px;
+            max-height: 200px;
+            overflow-y: auto;
+            padding: 0.5rem;
+        }
+
+        .filter-select[multiple] option {
+            background: rgba(31, 41, 55, 0.9);
+            color: white;
+            padding: 0.75rem 1rem;
+            margin: 0.25rem 0;
+            border-radius: 0.5rem;
+            border: 1px solid transparent;
+            transition: all 0.2s ease;
+        }
+
+        .filter-select[multiple] option:hover {
+            background: rgba(29, 78, 216, 0.3);
+            border-color: rgba(59, 130, 246, 0.5);
+            color: rgb(96, 165, 250);
+        }
+
+        .filter-select[multiple] option:checked {
+            background: linear-gradient(135deg, rgba(29, 78, 216, 0.8) 0%, rgba(37, 99, 235, 0.75) 100%);
+            border-color: rgba(59, 130, 246, 0.6);
+            color: white;
+            font-weight: 600;
+        }
+
+        .filter-select[multiple] option:checked:hover {
+            background: linear-gradient(135deg, rgba(29, 78, 216, 0.9) 0%, rgba(37, 99, 235, 0.85) 100%);
+        }
+
+        /* Custom scrollbar for multiple select */
+        .filter-select[multiple]::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .filter-select[multiple]::-webkit-scrollbar-track {
+            background: rgba(55, 65, 81, 0.3);
+            border-radius: 4px;
+        }
+
+        .filter-select[multiple]::-webkit-scrollbar-thumb {
+            background: rgba(59, 130, 246, 0.5);
+            border-radius: 4px;
+        }
+
+        .filter-select[multiple]::-webkit-scrollbar-thumb:hover {
+            background: rgba(59, 130, 246, 0.7);
         }
 
         .filter-select:focus {
@@ -731,13 +807,185 @@ new class extends Component {
             margin-left: 0.5rem;
         }
 
+        /* Select2 Custom Styling */
+        .select2-container {
+            width: 100% !important;
+        }
+
+        .select2-container .select2-selection--multiple,
+        .select2-container .select2-selection--single {
+            background: linear-gradient(145deg, rgba(55, 65, 81, 0.8) 0%, rgba(75, 85, 99, 0.6) 100%) !important;
+            border: 2px solid rgba(75, 85, 99, 0.6) !important;
+            border-radius: 0.75rem !important;
+            min-height: 46px !important;
+            padding: 0.25rem 0.5rem !important;
+            transition: all 0.3s ease !important;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2) !important;
+        }
+
+        .select2-container .select2-selection--single {
+            display: flex !important;
+            align-items: center !important;
+            padding: 0.5rem 1rem !important;
+        }
+
+        .select2-container .select2-selection__rendered {
+            color: white !important;
+            font-size: 0.875rem !important;
+            font-weight: 500 !important;
+            line-height: 1.5 !important;
+            padding: 0 !important;
+            margin: 0 !important;
+        }
+
+        .select2-container .select2-selection__arrow {
+            height: 100% !important;
+            right: 0.5rem !important;
+        }
+
+        .select2-container .select2-selection__arrow b {
+            border-color: rgb(156, 163, 175) transparent transparent transparent !important;
+            border-style: solid !important;
+            border-width: 5px 4px 0 4px !important;
+        }
+
+        .select2-container .select2-selection--multiple:focus-within,
+        .select2-container .select2-selection--single:focus-within,
+        .select2-container.select2-container--open .select2-selection--single,
+        .select2-container.select2-container--open .select2-selection--multiple {
+            border-color: rgb(59, 130, 246) !important;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15), inset 0 2px 4px rgba(0, 0, 0, 0.2) !important;
+            background: linear-gradient(145deg, rgba(59, 130, 246, 0.1) 0%, rgba(75, 85, 99, 0.7) 100%) !important;
+        }
+
+        .select2-container .select2-search--inline .select2-search__field {
+            background: transparent !important;
+            border: none !important;
+            color: white !important;
+            font-size: 0.875rem !important;
+            font-weight: 500 !important;
+            padding: 0.25rem !important;
+            outline: none !important;
+        }
+
+        .select2-container .select2-search--inline .select2-search__field::placeholder {
+            color: rgb(156, 163, 175) !important;
+        }
+
+        .select2-container .select2-selection__choice {
+            background: linear-gradient(135deg, rgba(29, 78, 216, 0.8) 0%, rgba(37, 99, 235, 0.75) 100%) !important;
+            border: 1px solid rgba(59, 130, 246, 0.6) !important;
+            border-radius: 1rem !important;
+            color: white !important;
+            font-size: 0.8rem !important;
+            font-weight: 600 !important;
+            padding: 0.25rem 0.75rem !important;
+            margin: 0.125rem !important;
+            box-shadow: 0 2px 4px rgba(29, 78, 216, 0.2) !important;
+        }
+
+        .select2-container .select2-selection__choice__remove {
+            color: rgba(248, 113, 113, 0.8) !important;
+            font-size: 1rem !important;
+            font-weight: bold !important;
+            margin-right: 0.5rem !important;
+            border: none !important;
+            background: none !important;
+            cursor: pointer !important;
+        }
+
+        .select2-container .select2-selection__choice__remove:hover {
+            color: rgb(248, 113, 113) !important;
+        }
+
+        .select2-dropdown {
+            background: rgba(31, 41, 55, 0.95) !important;
+            border: 2px solid rgba(59, 130, 246, 0.4) !important;
+            border-radius: 0.75rem !important;
+            backdrop-filter: blur(20px) !important;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 10px 10px -5px rgba(0, 0, 0, 0.2) !important;
+            z-index: 1050 !important;
+        }
+
+        .select2-container .select2-results > .select2-results__options {
+            max-height: 200px !important;
+            overflow-y: auto !important;
+        }
+
+        .select2-container .select2-results__option {
+            background: transparent !important;
+            color: rgb(209, 213, 219) !important;
+            font-size: 0.875rem !important;
+            font-weight: 500 !important;
+            padding: 0.75rem 1rem !important;
+            transition: all 0.2s ease !important;
+            border: none !important;
+        }
+
+        .select2-container .select2-results__option:hover,
+        .select2-container .select2-results__option--highlighted {
+            background: rgba(29, 78, 216, 0.3) !important;
+            color: rgb(96, 165, 250) !important;
+        }
+
+        .select2-container .select2-results__option[aria-selected="true"] {
+            background: rgba(29, 78, 216, 0.5) !important;
+            color: white !important;
+            font-weight: 600 !important;
+        }
+
+        .select2-container .select2-search--dropdown .select2-search__field {
+            background: rgba(55, 65, 81, 0.8) !important;
+            border: 1px solid rgba(75, 85, 99, 0.6) !important;
+            border-radius: 0.5rem !important;
+            color: white !important;
+            font-size: 0.875rem !important;
+            padding: 0.5rem !important;
+            margin: 0.5rem !important;
+            width: calc(100% - 1rem) !important;
+        }
+
+        .select2-container .select2-search--dropdown .select2-search__field:focus {
+            border-color: rgb(59, 130, 246) !important;
+            outline: none !important;
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15) !important;
+        }
+
+        .select2-container .select2-search--dropdown .select2-search__field::placeholder {
+            color: rgb(156, 163, 175) !important;
+        }
+
+        /* RTL Support for Select2 */
+        [dir="rtl"] .select2-container .select2-selection__choice__remove {
+            margin-right: 0 !important;
+            margin-left: 0.5rem !important;
+        }
+
+        /* Dark scrollbar for dropdown */
+        .select2-results__options::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .select2-results__options::-webkit-scrollbar-track {
+            background: rgba(55, 65, 81, 0.3);
+            border-radius: 4px;
+        }
+
+        .select2-results__options::-webkit-scrollbar-thumb {
+            background: rgba(59, 130, 246, 0.5);
+            border-radius: 4px;
+        }
+
+        .select2-results__options::-webkit-scrollbar-thumb:hover {
+            background: rgba(59, 130, 246, 0.7);
+        }
 
     </style>
 
     <!-- Header -->
     <div style="max-width: 80rem; margin: 0 auto 3rem auto; text-align: center;">
         <h1 style="font-size: 2.25rem; font-weight: bold; color: white; margin-bottom: 1rem;">
-            {{ __('courses.premium_courses') }}
+            @lang('courses.premium_courses')
         </h1>
         <p style="font-size: 1.125rem; color: #d1d5db; max-width: 42rem; margin: 0 auto;">
             {{ __('courses.courses_subtitle') }}
@@ -793,14 +1041,14 @@ new class extends Component {
 
         <!-- Advanced Filters (Collapsible) -->
         @if($showFilters)
-            <div class="filter-section" style="border-top: 2px solid rgba(59, 130, 246, 0.2); padding-top: 2rem;">
+            <div class="filter-section" style="border-top: 2px solid rgba(59, 130, 246, 0.2); padding-top: 2rem;" wire:ignore>
                 <div class="filter-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 2rem; margin-bottom: 2rem;">
                     <!-- Category Filter -->
                     <div>
                         <label class="filter-label">
                             {{ __('courses.categories') }}
                         </label>
-                        <select wire:model.live="selectedCategories" multiple class="filter-select" style="height: 100px;">
+                        <select wire:model.live="selectedCategories" multiple class="filter-select" style="min-height: 120px;">
                             @foreach($this->getCategories() as $category)
                                 <option value="{{ $category->id }}">{{ $category->name }}</option>
                             @endforeach
@@ -952,7 +1200,7 @@ new class extends Component {
 
         <!-- Pagination -->
         <div class="pagination-styling-fix">
-            {{ $courses->links('pagination::clean-navigation') }}
+            {{ $courses->links('pagination::livewire-navigation') }}
         </div>
     @else
         <!-- Empty State -->
@@ -1011,4 +1259,141 @@ new class extends Component {
             </div>
         </div>
     @endif
+
+    <!-- Enhanced Select Functionality -->
+    <script>
+        // Load libraries if not present
+        (function() {
+            function loadCSS(url) {
+                if (!document.querySelector(`link[href="${url}"]`)) {
+                    const link = document.createElement('link');
+                    link.href = url;
+                    link.rel = 'stylesheet';
+                    document.head.appendChild(link);
+                }
+            }
+
+            function loadScript(url, callback) {
+                const script = document.createElement('script');
+                script.src = url;
+                script.onload = callback;
+                document.head.appendChild(script);
+            }
+
+            // Load Select2 CSS
+            loadCSS('https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css');
+
+            // Load jQuery if not present
+            if (typeof jQuery === 'undefined') {
+                loadScript('https://code.jquery.com/jquery-3.6.0.min.js', function() {
+                    loadSelect2();
+                });
+            } else {
+                loadSelect2();
+            }
+
+            function loadSelect2() {
+                if (typeof jQuery.fn.select2 === 'undefined') {
+                    loadScript('https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js', function() {
+                        setTimeout(initializeEnhancements, 500);
+                    });
+                } else {
+                    setTimeout(initializeEnhancements, 100);
+                }
+            }
+
+            function initializeEnhancements() {
+                // Wait for DOM and check if filters are visible
+                const waitForFilters = () => {
+                    const categorySelect = document.querySelector('select[wire\\:model\\.live="selectedCategories"]');
+                    const progressSelect = document.querySelector('select[wire\\:model\\.live="progressFilter"]');
+                    
+                    if (categorySelect && progressSelect && typeof jQuery !== 'undefined' && typeof jQuery.fn.select2 !== 'undefined') {
+                        setupSelect2();
+                        
+                        // Listen for Livewire updates to reinitialize
+                        document.addEventListener('livewire:navigated', setupSelect2);
+                        document.addEventListener('livewire:updated', function() {
+                            setTimeout(setupSelect2, 100);
+                        });
+                    } else {
+                        setTimeout(waitForFilters, 300);
+                    }
+                };
+                
+                waitForFilters();
+            }
+
+            function setupSelect2() {
+                try {
+                    const categorySelect = jQuery('select[wire\\:model\\.live="selectedCategories"]');
+                    const progressSelect = jQuery('select[wire\\:model\\.live="progressFilter"]');
+
+                    // Destroy existing instances
+                    if (categorySelect.hasClass('select2-hidden-accessible')) {
+                        categorySelect.select2('destroy');
+                    }
+                    if (progressSelect.hasClass('select2-hidden-accessible')) {
+                        progressSelect.select2('destroy');
+                    }
+
+                    // Initialize category select with Select2
+                    if (categorySelect.length > 0) {
+                        categorySelect.select2({
+                            placeholder: '{{ __("courses.select_categories") }}',
+                            allowClear: true,
+                            multiple: true,
+                            closeOnSelect: false,
+                            width: '100%',
+                            dropdownParent: jQuery('.search-filter-container'),
+                            language: {
+                                noResults: function() {
+                                    return '{{ __("courses.no_categories_found") }}';
+                                },
+                                searching: function() {
+                                    return '{{ __("courses.searching") }}...';
+                                }
+                            }
+                        }).on('select2:select select2:unselect', function() {
+                            // Trigger Livewire update
+                            const event = new Event('change', { bubbles: true });
+                            this.dispatchEvent(event);
+                        });
+                    }
+
+                    // Initialize progress select with Select2
+                    if (progressSelect.length > 0) {
+                        progressSelect.select2({
+                            placeholder: '{{ __("courses.select_progress") }}',
+                            allowClear: false,
+                            width: '100%',
+                            dropdownParent: jQuery('.search-filter-container'),
+                            minimumResultsForSearch: Infinity,
+                            templateResult: function(option) {
+                                if (!option.id) return option.text;
+                                
+                                const icons = {
+                                    'all': '📚',
+                                    'not_started': '⏱️', 
+                                    'started': '▶️',
+                                    'completed': '✅'
+                                };
+                                
+                                const icon = icons[option.id] || '';
+                                return jQuery('<span><span style="margin-right: 8px;">' + icon + '</span>' + option.text + '</span>');
+                            }
+                        }).on('select2:select', function() {
+                            // Trigger Livewire update
+                            const event = new Event('change', { bubbles: true });
+                            this.dispatchEvent(event);
+                        });
+                    }
+
+                } catch (error) {
+                    console.log('Select2 initialization error:', error);
+                }
+            }
+        })();
+    </script>
+
 </div>

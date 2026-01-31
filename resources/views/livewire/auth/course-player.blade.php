@@ -840,6 +840,50 @@ new class extends Component
                 // Create confetti effect or celebration modal
                 console.log('🎉 Course completed! Congratulations!');
             }
+
+            // Preserve RTL direction after Livewire updates
+            function preserveRTLLayout() {
+                const container = document.querySelector('[data-direction]');
+                const currentDir = container?.getAttribute('data-direction') || 
+                                 document.documentElement.getAttribute('dir') || 
+                                 document.querySelector('[dir]')?.getAttribute('dir');
+                
+                console.log('Current direction:', currentDir);
+                
+                if (currentDir === 'rtl') {
+                    // Force RTL layout preservation
+                    const gridContainer = document.querySelector('.grid-container');
+                    const sidebar = document.querySelector('.sidebar-container');
+                    const mainArea = document.querySelector('.main-video-area');
+                    
+                    if (gridContainer && sidebar && mainArea) {
+                        console.log('Applying RTL layout...');
+                        
+                        // Ensure RTL grid layout with important declarations
+                        gridContainer.style.setProperty('grid-template-columns', '1fr 3fr', 'important');
+                        sidebar.style.setProperty('order', '1', 'important');
+                        sidebar.style.setProperty('grid-column', '1', 'important');
+                        mainArea.style.setProperty('order', '2', 'important');
+                        mainArea.style.setProperty('grid-column', '2', 'important');
+                        
+                        // Add RTL class for additional styling
+                        gridContainer.classList.add('rtl-layout');
+                        sidebar.classList.add('rtl-sidebar');
+                        mainArea.classList.add('rtl-main');
+                        
+                        console.log('RTL layout applied successfully');
+                    }
+                } else {
+                    console.log('LTR layout detected, maintaining default layout');
+                }
+            }
+
+            // Run on initial load
+            preserveRTLLayout();
+
+            // Run after each Livewire update
+            document.addEventListener('livewire:navigated', preserveRTLLayout);
+            document.addEventListener('livewire:updated', preserveRTLLayout);
         });
 
         // Theater mode escape key handler
@@ -847,6 +891,41 @@ new class extends Component
             if (e.key === 'Escape' && @this.theaterMode) {
                 @this.call('toggleTheaterMode');
             }
+        });
+
+        // Additional RTL layout enforcement for lesson changes
+        Livewire.hook('message.processed', (message, component) => {
+            setTimeout(() => {
+                const container = document.querySelector('[data-direction]');
+                const currentDir = container?.getAttribute('data-direction') || 
+                                 document.documentElement.getAttribute('dir') || 
+                                 document.querySelector('[dir]')?.getAttribute('dir');
+                
+                console.log('Livewire hook - Current direction:', currentDir);
+                
+                if (currentDir === 'rtl') {
+                    const gridContainer = document.querySelector('.grid-container');
+                    const sidebar = document.querySelector('.sidebar-container');
+                    const mainArea = document.querySelector('.main-video-area');
+                    
+                    if (gridContainer && sidebar && mainArea) {
+                        console.log('Livewire hook - Forcing RTL layout...');
+                        
+                        gridContainer.style.setProperty('grid-template-columns', '1fr 3fr', 'important');
+                        sidebar.style.setProperty('order', '1', 'important');
+                        sidebar.style.setProperty('grid-column', '1', 'important');
+                        mainArea.style.setProperty('order', '2', 'important');
+                        mainArea.style.setProperty('grid-column', '2', 'important');
+                        
+                        // Also add classes
+                        gridContainer.classList.add('rtl-layout');
+                        sidebar.classList.add('rtl-sidebar');
+                        mainArea.classList.add('rtl-main');
+                        
+                        console.log('Livewire hook - RTL layout forced successfully');
+                    }
+                }
+            }, 50); // Reduced timeout for faster response
         });
     </script>
 </div>
