@@ -145,9 +145,12 @@ new class extends Component {
             left: 0;
             width: 100vw;
             height: 100vh;
-            z-index: 9999;
+            z-index: 99999;
             background: #000;
             border-radius: 0;
+            aspect-ratio: unset !important;
+            max-width: none !important;
+            max-height: none !important;
         }
 
         .video-controls {
@@ -432,11 +435,15 @@ new class extends Component {
         }
 
         [dir="rtl"] .setting-item {
-            flex-direction: row-reverse;
+            flex-direction: row;
+        }
+
+        [dir="rtl"] .setting-item>span:first-child {
+            text-align: right;
         }
 
         [dir="rtl"] .attachment-button {
-            flex-direction: row-reverse;
+            flex-direction: row;
         }
 
         /* Ensure consistent layout regardless of content changes */
@@ -473,7 +480,7 @@ new class extends Component {
         }
 
         [dir="rtl"] .setting-item {
-            flex-direction: row-reverse;
+            flex-direction: row;
         }
     </style>
 
@@ -538,8 +545,8 @@ new class extends Component {
                                         <option value="2" {{ $playbackSpeed == 2 ? 'selected' : '' }}>2x</option>
                                     </select>
 
-                                    <button wire:click="toggleTheaterMode" class="control-button"
-                                        title="{{ __('courses.theater_mode') }}">
+                                    <button onclick="toggleFullscreen()" class="control-button"
+                                        title="{{ __('courses.fullscreen') }}">
                                         <svg style="width: 1rem; height: 1rem;" fill="none" stroke="currentColor"
                                             viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -764,10 +771,107 @@ new class extends Component {
     </div>
 
     <!-- Enhanced JavaScript for Video Controls and Progress Tracking -->
+    <script src="https://www.youtube.com/iframe_api"></script>
     <script>
+        var player;
+
+        function onYouTubeIframeAPIReady() {
+            player = new YT.Player('video-player', {
+                events: {
+                    'onReady': onPlayerReady,
+                    'onStateChange': onPlayerStateChange
+                }
+            });
+        }
+
+        function onPlayerReady(event) {
+            console.log("Player ready");
+            // Set initial speed
+            player.setPlaybackRate(parseFloat(@this.playbackSpeed));
+        }
+
+        function onPlayerStateChange(event) {
+            if (event.data == YT.PlayerState.ENDED) {
+                @this.call('playNextLesson');
+            }
+        }
+
         document.addEventListener('DOMContentLoaded', function() {
-            let player = null;
             let progressInterval = null;
+
+            // functional togglePlayPause
+            window.togglePlayPause = function() {
+                if (player && typeof player.getPlayerState === 'function') {
+                    const state = player.getPlayerState();
+                    if (state === YT.PlayerState.PLAYING) {
+                        player.pauseVideo();
+                    } else {
+                        player.playVideo();
+                    }
+                }
+            }
+
+            // functional seekRelative
+            window.seekRelative = function(seconds) {
+                if (player && typeof player.getCurrentTime === 'function') {
+                    const currentTime = player.getCurrentTime();
+                    player.seekTo(currentTime + seconds, true);
+                }
+            }
+
+            // functional changeSpeed
+            window.changeSpeed = function(increment) {
+                if (player && typeof player.getPlaybackRate === 'function') {
+                    const currentSpeed = player.getPlaybackRate();
+                    const newSpeed = Math.max(0.25, Math.min(2, currentSpeed + increment));
+                    player.setPlaybackRate(newSpeed);
+                    @this.call('setPlaybackSpeed', newSpeed);
+                }
+            }
+
+            // functional seekVideo
+            window.seekVideo = function(event) {
+                if (player && typeof player.getDuration === 'function') {
+                    const progressBar = event.currentTarget;
+                    const rect = progressBar.getBoundingClientRect();
+                    const percent = (event.clientX - rect.left) / rect.width;
+                    const duration = player.getDuration();
+                    player.seekTo(duration * percent, true);
+                }
+            }
+
+            // functional toggleFullscreen
+            window.toggleFullscreen = function() {
+                const container = document.querySelector('.video-container');
+                if (!document.fullscreenElement) {
+                    if (container.requestFullscreen) {
+                        container.requestFullscreen();
+                    } else if (container.webkitRequestFullscreen) {
+                        /* Safari */
+                        container.webkitRequestFullscreen();
+                    } else if (container.msRequestFullscreen) {
+                        /* IE11 */
+                        container.msRequestFullscreen();
+                    }
+                } else {
+                    if (document.exitFullscreen) {
+                        document.exitFullscreen();
+                    } else if (document.webkitExitFullscreen) {
+                        /* Safari */
+                        document.webkitExitFullscreen();
+                    } else if (document.msExitFullscreen) {
+                        /* IE11 */
+                        document.msExitFullscreen();
+                    }
+                }
+            }
+
+            // Watch for speed changes from Livewire
+            Livewire.on('speed-changed', function(speed) {
+                if (player && typeof player.setPlaybackRate === 'function') {
+                    player.setPlaybackRate(parseFloat(speed));
+                }
+            });
 
             // Keyboard Shortcuts
             document.addEventListener('keydown', function(e) {
@@ -814,63 +918,59 @@ new class extends Component {
                 if (progressInterval) clearInterval(progressInterval);
 
                 progressInterval = setInterval(function() {
-                    const iframe = document.getElementById('video-player');
-                    if (iframe && iframe.contentWindow) {
-                        // Simulate progress tracking (would need YouTube API for real implementation)
-                        const currentTime = Math.random() * 300; // Mock current time
-                        const duration = 300; // Mock duration
+                    if (player && typeof player.getCurrentTime === 'function') {
+                        const currentTime = player.getCurrentTime();
+                        const duration = player.getDuration();
 
-                        @this.call('updateProgress', @this.activeLesson.id, currentTime, duration);
+                        if (duration > 0) {
+                            @this.call('updateProgress', @this.activeLesson.id, currentTime, duration);
+
+                            // Client-side progress bar update for smoothness
+                            const progressBar = document.querySelector('.progress-fill');
+                            if (progressBar) {
+                                progressBar.style.width = (currentTime / duration * 100) + '%';
+                            }
+                        }
                     }
-                }, 5000); // Update every 5 seconds
-            }
-
-            // Video Control Functions
-            function togglePlayPause() {
-                // Would interact with YouTube API
-                console.log('Toggle play/pause');
-            }
-
-            function seekRelative(seconds) {
-                // Would interact with YouTube API
-                console.log('Seek', seconds, 'seconds');
-            }
-
-            function changeSpeed(increment) {
-                const currentSpeed = @this.playbackSpeed;
-                const newSpeed = Math.max(0.25, Math.min(2, currentSpeed + increment));
-                @this.call('setPlaybackSpeed', newSpeed);
-            }
-
-            function seekVideo(event) {
-                const progressBar = event.currentTarget;
-                const rect = progressBar.getBoundingClientRect();
-                const percent = (event.clientX - rect.left) / rect.width;
-
-                // Would seek to percent * duration
-                console.log('Seek to', Math.round(percent * 100), '%');
+                }, 1000); // Update every 1 second for better resolution
             }
 
             // Livewire Event Listeners
             Livewire.on('lesson-changed', function(data) {
-                console.log('Lesson changed:', data);
-                startProgressTracking();
+                // Re-initialize player logic if iframe is replaced
+                // Since Livewire diffing might not replace the iframe element completely if we are lucky,
+                // but if src changes, we might need to be careful.
+                // Actually, the iframe src binding in blade updates the src attribute.
+                // YT API might lose connection if iframe reloads. 
+                // Using 'enablejsapi=1' is key.
 
-                // Update iframe src if needed
-                const iframe = document.getElementById('video-player');
-                if (iframe && data.videoUrl) {
-                    const autoplay = data.autoPlay ? '&autoplay=1' : '';
-                    iframe.src = data.videoUrl.replace('watch?v=', 'embed/') + '?enablejsapi=1' + autoplay;
-                }
+                // We might need to re-bind the player object if the iframe DOM element is replaced.
+                setTimeout(() => {
+                    // Check if player object is still valid or if we need to re-attach
+                    // Typically simpler to rely on iframe load but with livewire it's tricky.
+                    // Ideally we destroy and re-create, or just let the iframe reload.
+                    // If src changes, the player object typically needs re-init or just use 'loadVideoByUrl' if we controlled it fully via JS.
+                    // But here we rely on iframe src attribute.
+
+                    // Let's try to just re-instantiate if needed or assume the API script handles existing iframe.
+                    // Actually, if Livewire updates the DOM, the global 'player' variable might still point to the old object.
+
+                    // A cleaner way for Livewire + YouTube:
+                    // 1. Destroy old player
+                    if (player && typeof player.destroy === 'function') {
+                        try {
+                            player.destroy();
+                        } catch (e) {}
+                    }
+                    // 2. Re-init
+                    onYouTubeIframeAPIReady();
+
+                    startProgressTracking();
+                }, 500);
             });
 
             Livewire.on('autoplay-changed', function(autoPlay) {
                 console.log('Autoplay changed:', autoPlay);
-            });
-
-            Livewire.on('speed-changed', function(speed) {
-                console.log('Speed changed:', speed);
-                // Would change YouTube player speed
             });
 
             // Initialize progress tracking
@@ -881,17 +981,6 @@ new class extends Component {
                 @this.call('markLessonComplete', lessonId);
             };
 
-            // Course completion celebration
-            Livewire.on('course-completed', function() {
-                // Show celebration animation
-                showCompletionCelebration();
-            });
-
-            function showCompletionCelebration() {
-                // Create confetti effect or celebration modal
-                console.log('🎉 Course completed! Congratulations!');
-            }
-
             // Preserve RTL direction after Livewire updates
             function preserveRTLLayout() {
                 const container = document.querySelector('[data-direction]');
@@ -899,33 +988,22 @@ new class extends Component {
                     document.documentElement.getAttribute('dir') ||
                     document.querySelector('[dir]')?.getAttribute('dir');
 
-                console.log('Current direction:', currentDir);
-
                 if (currentDir === 'rtl') {
-                    // Force RTL layout preservation
                     const gridContainer = document.querySelector('.grid-container');
                     const sidebar = document.querySelector('.sidebar-container');
                     const mainArea = document.querySelector('.main-video-area');
 
                     if (gridContainer && sidebar && mainArea) {
-                        console.log('Applying RTL layout...');
-
-                        // Ensure RTL grid layout with important declarations
                         gridContainer.style.setProperty('grid-template-columns', '1fr 3fr', 'important');
                         sidebar.style.setProperty('order', '1', 'important');
                         sidebar.style.setProperty('grid-column', '1', 'important');
                         mainArea.style.setProperty('order', '2', 'important');
                         mainArea.style.setProperty('grid-column', '2', 'important');
 
-                        // Add RTL class for additional styling
                         gridContainer.classList.add('rtl-layout');
                         sidebar.classList.add('rtl-sidebar');
                         mainArea.classList.add('rtl-main');
-
-                        console.log('RTL layout applied successfully');
                     }
-                } else {
-                    console.log('LTR layout detected, maintaining default layout');
                 }
             }
 
@@ -935,6 +1013,9 @@ new class extends Component {
             // Run after each Livewire update
             document.addEventListener('livewire:navigated', preserveRTLLayout);
             document.addEventListener('livewire:updated', preserveRTLLayout);
+            Livewire.hook('message.processed', (message, component) => {
+                setTimeout(preserveRTLLayout, 50);
+            });
         });
 
         // Theater mode escape key handler
@@ -942,41 +1023,6 @@ new class extends Component {
             if (e.key === 'Escape' && @this.theaterMode) {
                 @this.call('toggleTheaterMode');
             }
-        });
-
-        // Additional RTL layout enforcement for lesson changes
-        Livewire.hook('message.processed', (message, component) => {
-            setTimeout(() => {
-                const container = document.querySelector('[data-direction]');
-                const currentDir = container?.getAttribute('data-direction') ||
-                    document.documentElement.getAttribute('dir') ||
-                    document.querySelector('[dir]')?.getAttribute('dir');
-
-                console.log('Livewire hook - Current direction:', currentDir);
-
-                if (currentDir === 'rtl') {
-                    const gridContainer = document.querySelector('.grid-container');
-                    const sidebar = document.querySelector('.sidebar-container');
-                    const mainArea = document.querySelector('.main-video-area');
-
-                    if (gridContainer && sidebar && mainArea) {
-                        console.log('Livewire hook - Forcing RTL layout...');
-
-                        gridContainer.style.setProperty('grid-template-columns', '1fr 3fr', 'important');
-                        sidebar.style.setProperty('order', '1', 'important');
-                        sidebar.style.setProperty('grid-column', '1', 'important');
-                        mainArea.style.setProperty('order', '2', 'important');
-                        mainArea.style.setProperty('grid-column', '2', 'important');
-
-                        // Also add classes
-                        gridContainer.classList.add('rtl-layout');
-                        sidebar.classList.add('rtl-sidebar');
-                        mainArea.classList.add('rtl-main');
-
-                        console.log('Livewire hook - RTL layout forced successfully');
-                    }
-                }
-            }, 50); // Reduced timeout for faster response
         });
     </script>
 </div>
