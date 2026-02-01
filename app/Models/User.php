@@ -58,4 +58,11 @@ class User extends Authenticatable implements FilamentUser, LaratrustUser
     {
         return $this->hasRole(['super_admin', 'admin', 'editor']);
     }
+
+    public function lessons()
+    {
+        return $this->belongsToMany(Lesson::class, 'lesson_user')
+            ->withPivot('progress', 'last_watched_at')
+            ->withTimestamps();
+    }
 }

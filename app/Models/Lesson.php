@@ -35,4 +35,11 @@ class Lesson extends Model implements Translatable
     {
         return $this->belongsTo(Course::class, 'course_id', 'id');
     }
+
+    public function users()
+    {
+        return $this->belongsToMany(User::class, 'lesson_user')
+            ->withPivot('progress', 'last_watched_at')
+            ->withTimestamps();
+    }
 }

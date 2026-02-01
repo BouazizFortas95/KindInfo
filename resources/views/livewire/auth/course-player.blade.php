@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Storage;
 new class extends Component {
     public Course $course;
     public $activeLesson;
-    public $watchedLessons = [];
+    public $completedLessons = []; // Renamed from watchedLessons
     public $lessonProgress = [];
     public $autoPlay = true;
     public $playbackSpeed = 1.0;
@@ -54,9 +54,65 @@ new class extends Component {
 
     public function markLessonComplete($lessonId)
     {
-        if (!in_array($lessonId, $this->watchedLessons)) {
-            $this->watchedLessons[] = $lessonId;
+        $this->completeLesson($lessonId);
+    }
+
+    public function toggleCompletion($lessonId)
+    {
+        if (auth()->check()) {
+            $user = auth()->user();
+            $exists = $user->lessons()->where('lesson_id', $lessonId)->exists();
+
+            if ($exists) {
+                $user->lessons()->detach($lessonId);
+                $this->completedLessons = array_diff($this->completedLessons, [$lessonId]);
+                $this->lessonProgress[$lessonId] = 0;
+            } else {
+                $user->lessons()->attach($lessonId, [
+                    'progress' => 100,
+                    'last_watched_at' => now(),
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+                if (!in_array($lessonId, $this->completedLessons)) {
+                    $this->completedLessons[] = (int) $lessonId;
+                }
+                $this->lessonProgress[$lessonId] = 100;
+            }
+        } else {
+            // Guest session support
+            if (in_array($lessonId, $this->completedLessons)) {
+                $this->completedLessons = array_diff($this->completedLessons, [$lessonId]);
+                $this->lessonProgress[$lessonId] = 0;
+            } else {
+                $this->completedLessons[] = (int) $lessonId;
+                $this->lessonProgress[$lessonId] = 100;
+            }
+            session()->put('completed_lessons', $this->completedLessons);
         }
+
+        $this->completedLessons = array_values($this->completedLessons);
+    }
+
+    public function completeLesson($lessonId)
+    {
+        if (!in_array($lessonId, $this->completedLessons)) {
+            $this->completedLessons[] = (int) $lessonId;
+            session()->put('completed_lessons', $this->completedLessons);
+
+            if (auth()->check()) {
+                auth()
+                    ->user()
+                    ->lessons()
+                    ->syncWithoutDetaching([
+                        $lessonId => [
+                            'progress' => 100,
+                            'last_watched_at' => now(),
+                        ],
+                    ]);
+            }
+        }
+
         $this->lessonProgress[$lessonId] = 100;
 
         if ($this->autoPlay) {
@@ -66,16 +122,20 @@ new class extends Component {
 
     public function updateProgress($lessonId, $currentTime, $duration)
     {
-        $this->currentTime = $currentTime;
-        $this->duration = $duration;
+        $this->currentTime = (float) $currentTime;
+        $this->duration = (float) $duration;
 
         if ($duration > 0) {
             $progress = ($currentTime / $duration) * 100;
             $this->lessonProgress[$lessonId] = min($progress, 100);
 
-            if ($progress >= 90) {
-                $this->markLessonComplete($lessonId);
+            if ($progress >= 90 && !in_array($lessonId, $this->completedLessons)) {
+                $this->completeLesson($lessonId);
             }
+
+            // Periodically save progress to DB if logged in (e.g., every 5 seconds or on major changes)
+            // For now, only save on completion or manually.
+            // We could add a throttle if we wanted to save partial progress.
         }
     }
 
@@ -103,16 +163,38 @@ new class extends Component {
 
     private function loadUserProgress()
     {
-        // Simulate loading progress from session/database
-        $this->watchedLessons = session()->get('watched_lessons_' . $this->course->id, []);
-        $this->lessonProgress = session()->get('lesson_progress_' . $this->course->id, []);
+        if (auth()->check()) {
+            $user = auth()->user();
+
+            // Get completed lesson IDs for this course from DB
+            $this->completedLessons = $user
+                ->lessons()
+                ->whereIn('lesson_id', $this->course->lessons->pluck('id'))
+                ->pluck('lesson_id')
+                ->map(fn($id) => (int) $id)
+                ->toArray();
+
+            // Load progress percentages
+            $this->lessonProgress = $user
+                ->lessons()
+                ->whereIn('lesson_id', $this->course->lessons->pluck('id'))
+                ->get()
+                ->pluck('pivot.progress', 'id')
+                ->toArray();
+        } else {
+            // Load completed lessons from session for guests
+            $this->completedLessons = array_map('intval', session('completed_lessons', []));
+            $this->lessonProgress = session()->get('lesson_progress_' . $this->course->id, []);
+        }
     }
 
     private function saveCurrentProgress()
     {
-        // Save progress to session/database
-        session()->put('watched_lessons_' . $this->course->id, $this->watchedLessons);
-        session()->put('lesson_progress_' . $this->course->id, $this->lessonProgress);
+        if (auth()->check()) {
+            // Already synced in completeLesson or updateProgress
+        } else {
+            session()->put('lesson_progress_' . $this->course->id, $this->lessonProgress);
+        }
     }
 
     public function getLessonProgress($lessonId)
@@ -122,7 +204,28 @@ new class extends Component {
 
     public function isLessonCompleted($lessonId)
     {
-        return in_array($lessonId, $this->watchedLessons);
+        return in_array((int) $lessonId, $this->completedLessons);
+    }
+
+    public function getProgressProperty()
+    {
+        $total = $this->course->lessons->count();
+        if ($total == 0) {
+            return 0;
+        }
+
+        if (auth()->check()) {
+            $completedCount = auth()
+                ->user()
+                ->lessons()
+                ->whereIn('lesson_id', $this->course->lessons->pluck('id'))
+                ->count();
+        } else {
+            $courseLessonIds = $this->course->lessons->pluck('id')->toArray();
+            $completedCount = count(array_intersect($this->completedLessons, $courseLessonIds));
+        }
+
+        return ($completedCount / $total) * 100;
     }
 }; ?>
 
@@ -252,7 +355,7 @@ new class extends Component {
         .lesson-progress-bar {
             position: absolute;
             bottom: 0;
-            left: 0;
+            inset-inline-start: 0;
             height: 2px;
             background: rgb(59, 130, 246);
             transition: width 0.3s;
@@ -406,8 +509,8 @@ new class extends Component {
 
         [dir="rtl"] .lesson-number-container {
             order: 2;
-            margin-left: 0.75rem;
-            margin-right: 0;
+            margin-right: 0.75rem;
+            margin-left: 0;
         }
 
         [dir="rtl"] .lesson-details {
@@ -592,8 +695,8 @@ new class extends Component {
                         <div class="setting-item">
                             <span style="color: rgb(209, 213, 219);">{{ __('courses.course_progress') }}</span>
                             <span style="color: rgb(34, 197, 94); font-weight: 500;">
-                                {{ count($watchedLessons) }}/{{ $course->lessons->count() }}
-                                {{ __('courses.completed') }}
+                                {{ count(array_intersect($completedLessons, $course->lessons->pluck('id')->toArray())) }}/{{ $course->lessons->count() }}
+                                ({{ round($this->progress) }}%) {{ __('courses.completed') }}
                             </span>
                         </div>
                     </div>
@@ -640,6 +743,28 @@ new class extends Component {
                             </div>
                         </div>
                     @endif
+
+                    <!-- Sync/Toggle Completion Button -->
+                    <div style="margin-top: 1rem; border-top: 1px solid rgb(31, 41, 55); padding-top: 1rem;">
+                        <button wire:click="toggleCompletion({{ $activeLesson->id }})"
+                            style="width: 100%; background-color: {{ in_array((int) $activeLesson->id, $completedLessons) ? '#10B981' : '#3B82F6' }}; color: white; padding: 0.75rem 1rem; border-radius: 0.5rem; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.5rem; font-weight: 500; transition: all 0.2s;">
+                            @if (in_array((int) $activeLesson->id, $completedLessons))
+                                <svg style="width: 1.25rem; height: 1.25rem;" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M5 13l4 4L19 7"></path>
+                                </svg>
+                                {{ __('courses.completed') }} ({{ __('courses.unmark') ?? 'Unmark' }})
+                            @else
+                                <svg style="width: 1.25rem; height: 1.25rem;" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M5 13l4 4L19 7"></path>
+                                </svg>
+                                {{ __('courses.mark_complete') ?? 'Mark as Complete' }}
+                            @endif
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -659,6 +784,20 @@ new class extends Component {
                     <p style="color: rgb(191, 219, 254); font-size: 0.875rem; margin-top: 0.25rem;">
                         {{ $course->lessons->count() }} {{ __('courses.lessons') }}
                     </p>
+                </div>
+
+                <!-- Progress Bar in Sidebar -->
+                <div
+                    style="padding: 0 1rem 1rem 1rem; background: linear-gradient(to right, rgb(37, 99, 235), rgb(147, 51, 234));">
+                    <div
+                        style="display: flex; justify-content: space-between; font-size: 0.75rem; color: white; margin-bottom: 0.25rem;">
+                        <span>{{ round($this->progress) }}% {{ __('courses.completed') }}</span>
+                    </div>
+                    <div style="width: 100%; height: 6px; background: rgba(255,255,255,0.3); border-radius: 3px;">
+                        <div
+                            style="width: {{ $this->progress }}%; height: 100%; background: #fff; border-radius: 3px; transition: width 0.3s;">
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Lessons List -->
@@ -721,8 +860,15 @@ new class extends Component {
                                 <!-- Lesson Details -->
                                 <div class="lesson-details" style="flex: 1; min-width: 0;">
                                     <h4
-                                        style="font-weight: 600; font-size: 0.875rem; line-height: 1.25; margin-bottom: 0.25rem;
+                                        style="font-weight: 600; font-size: 0.875rem; line-height: 1.25; margin-bottom: 0.25rem; display: flex; align-items: center; gap: 0.5rem;
                                               color: {{ $isActive ? 'rgb(96, 165, 250)' : ($isCompleted ? 'rgb(34, 197, 94)' : 'rgb(229, 231, 235)') }};">
+                                        @if ($isCompleted)
+                                            <svg style="width: 1rem; height: 1rem; flex-shrink: 0;" fill="none"
+                                                stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                            </svg>
+                                        @endif
                                         {{ $lesson->title }}
                                     </h4>
 
