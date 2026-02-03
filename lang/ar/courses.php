@@ -105,4 +105,6 @@ return [
     'template_pitfalls_desc' => 'تعلم كيفية تجنب الأخطاء الشائعة واستكشاف المشكلات وإصلاحها.',
     'template_final_title' => 'المشروع النهائي',
     'template_final_desc' => 'اجمع كل شيء معاً في مشروع نهائي شامل.',
+    'enrolled_courses' => 'الدورات المسجلة',
+    'lessons_completed' => 'الدروس المكتملة',
 ];

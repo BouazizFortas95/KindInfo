@@ -105,4 +105,6 @@ return [
     'template_pitfalls_desc' => 'Learn to avoid common mistakes and troubleshoot issues.',
     'template_final_title' => 'Final Project',
     'template_final_desc' => 'Put everything together in a comprehensive final project.',
+    'enrolled_courses' => 'Enrolled Courses',
+    'lessons_completed' => 'Lessons Completed',
 ];

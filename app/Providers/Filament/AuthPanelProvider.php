@@ -40,7 +40,8 @@ class AuthPanelProvider extends PanelProvider
             ->discoverWidgets(in: app_path('Filament/Auth/Widgets'), for: 'App\Filament\Auth\Widgets')
             ->widgets([
                 AccountWidget::class,
-                FilamentInfoWidget::class,
+                \App\Filament\Auth\Widgets\AchievementStats::class,
+                \App\Filament\Auth\Widgets\RecentActivityWidget::class,
             ])
             ->middleware([
                 EncryptCookies::class,

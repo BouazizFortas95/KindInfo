@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Models\Course;
+use App\Models\Badge;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -64,5 +66,21 @@ class User extends Authenticatable implements FilamentUser, LaratrustUser
         return $this->belongsToMany(Lesson::class, 'lesson_user')
             ->withPivot('progress', 'last_watched_at')
             ->withTimestamps();
+    }
+
+    public function courses()
+    {
+        return Course::whereHas('lessons', function ($query) {
+            $query->whereHas('users', function ($subQuery) {
+                $subQuery->where('user_id', $this->id);
+            });
+        });
+    }
+
+    public function badges()
+    {
+        return $this->belongsToMany(Badge::class, 'user_badges')
+                    ->withPivot('earned_at')
+                    ->withTimestamps();
     }
 }

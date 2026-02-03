@@ -8,13 +8,13 @@ use App\Models\Course;
 use App\Models\User;
 use BackedEnum;
 use Filament\Resources\Resource;
-use Filament\Schemas\Components\DateTimePicker;
-use Filament\Schemas\Components\RichEditor;
-use Filament\Schemas\Components\Select;
-use Filament\Schemas\Components\Tabs;
-use Filament\Schemas\Components\Tabs\Tab;
-use Filament\Schemas\Components\Textarea;
-use Filament\Schemas\Components\TextInput;
+use Filament\Forms\Components\DateTimePicker;
+use Filament\Forms\Components\RichEditor;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Tabs;
+use Filament\Forms\Components\Tabs\Tab;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
@@ -36,12 +36,27 @@ class CertificateResource extends Resource
         return __('general.achievements');
     }
 
+    public static function getNavigationLabel(): string
+    {
+        return __('certificates.resource.plural_label');
+    }
+
+    public static function getModelLabel(): string
+    {
+        return __('certificates.resource.label');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('certificates.resource.plural_label');
+    }
+
     public static function form(Schema $schema): Schema
     {
         return $schema
             ->components([
                 Select::make('course_id')
-                    ->label('Course')
+                    ->label(__('certificates.fields.course_id'))
                     ->relationship('course', 'id')
                     ->getSearchResultsUsing(
                         fn(string $search): array =>
@@ -57,39 +72,39 @@ class CertificateResource extends Resource
                     ->required(),
 
                 Select::make('user_id')
-                    ->label('User')
+                    ->label(__('certificates.fields.user_id'))
                     ->relationship('user', 'name')
                     ->searchable()
                     ->preload()
                     ->required(),
 
                 TextInput::make('certificate_uuid')
-                    ->label('Certificate UUID')
+                    ->label(__('certificates.fields.certificate_uuid'))
                     ->disabled()
                     ->dehydrated(false),
 
                 DateTimePicker::make('issued_at')
-                    ->label('Issued At')
+                    ->label(__('certificates.fields.issued_at'))
                     ->required()
                     ->default(now()),
 
-                Tabs::make('Translations')
+                Tabs::make(__('certificates.tabs.translations'))
                     ->tabs(
                         collect(LaravelLocalization::getSupportedLocales())
                             ->map(function ($locale, $code) {
                                 return Tab::make($locale['name'])
                                     ->schema([
                                         TextInput::make("{$code}.title")
-                                            ->label('Title')
+                                            ->label(__('certificates.fields.title'))
                                             ->required()
                                             ->maxLength(255),
 
                                         Textarea::make("{$code}.reason")
-                                            ->label('Reason')
+                                            ->label(__('certificates.fields.reason'))
                                             ->rows(2),
 
                                         RichEditor::make("{$code}.body")
-                                            ->label('Certificate Body')
+                                            ->label(__('certificates.fields.body'))
                                             ->toolbarButtons([
                                                 'bold',
                                                 'italic',
@@ -110,41 +125,42 @@ class CertificateResource extends Resource
         return $table
             ->columns([
                 TextColumn::make('title')
-                    ->label('Title')
+                    ->label(__('certificates.fields.title'))
                     ->getStateUsing(fn(Certificate $record) => $record->title)
                     ->searchable()
                     ->sortable(),
 
                 TextColumn::make('course.title')
-                    ->label('Course')
+                    ->label(__('certificates.fields.course_id'))
                     ->getStateUsing(fn(Certificate $record) => $record->course?->title)
                     ->sortable()
                     ->searchable(),
 
                 TextColumn::make('user.name')
-                    ->label('User')
+                    ->label(__('certificates.fields.user_id'))
                     ->sortable()
                     ->searchable(),
 
                 TextColumn::make('certificate_uuid')
-                    ->label('UUID')
+                    ->label(__('certificates.fields.certificate_uuid'))
                     ->limit(15)
                     ->tooltip(fn(Certificate $record) => $record->certificate_uuid)
                     ->copyable(),
 
                 TextColumn::make('issued_at')
-                    ->label('Issued At')
+                    ->label(__('certificates.fields.issued_at'))
                     ->dateTime()
                     ->sortable(),
 
                 TextColumn::make('created_at')
+                    ->label(__('certificates.fields.created_at'))
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
                 SelectFilter::make('course_id')
-                    ->label('Course')
+                    ->label(__('certificates.filters.course'))
                     ->relationship('course', 'id')
                     ->getSearchResultsUsing(
                         fn(string $search): array =>

@@ -6,13 +6,13 @@ use App\Filament\Resources\BadgeResource\Pages;
 use App\Models\Badge;
 use BackedEnum;
 use Filament\Resources\Resource;
-use Filament\Schemas\Components\FileUpload;
-use Filament\Schemas\Components\Select;
-use Filament\Schemas\Components\Tabs;
-use Filament\Schemas\Components\Tabs\Tab;
-use Filament\Schemas\Components\Textarea;
-use Filament\Schemas\Components\TextInput;
-use Filament\Schemas\Components\Toggle;
+use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Tabs;
+use Filament\Forms\Components\Tabs\Tab;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\ImageColumn;
@@ -36,47 +36,62 @@ class BadgeResource extends Resource
         return __('general.achievements');
     }
 
+    public static function getNavigationLabel(): string
+    {
+        return __('badges.resource.plural_label');
+    }
+
+    public static function getModelLabel(): string
+    {
+        return __('badges.resource.label');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('badges.resource.plural_label');
+    }
+
     public static function form(Schema $schema): Schema
     {
         return $schema
             ->components([
                 FileUpload::make('icon_path')
-                    ->label('Badge Icon')
+                    ->label(__('badges.fields.icon_path'))
                     ->image()
                     ->directory('badges')
                     ->columnSpanFull(),
 
                 Select::make('type')
                     ->options([
-                        'course_completion' => 'Course Completion',
-                        'points_achievement' => 'Points Achievement',
-                        'special_achievement' => 'Special Achievement',
+                        'course_completion' => __('badges.types.course_completion'),
+                        'points_achievement' => __('badges.types.points_achievement'),
+                        'special_achievement' => __('badges.types.special_achievement'),
                     ])
                     ->required(),
 
                 TextInput::make('points_required')
-                    ->label('Points Required')
+                    ->label(__('badges.fields.points_required'))
                     ->numeric()
                     ->default(0)
                     ->minValue(0),
 
                 Toggle::make('is_active')
-                    ->label('Active')
+                    ->label(__('badges.fields.is_active'))
                     ->default(true),
 
-                Tabs::make('Translations')
+                Tabs::make(__('badges.tabs.translations'))
                     ->tabs(
                         collect(LaravelLocalization::getSupportedLocales())
                             ->map(function ($locale, $code) {
                                 return Tab::make($locale['name'])
                                     ->schema([
                                         TextInput::make("{$code}.name")
-                                            ->label('Name')
+                                            ->label(__('badges.fields.name'))
                                             ->required()
                                             ->maxLength(255),
 
                                         Textarea::make("{$code}.description")
-                                            ->label('Description')
+                                            ->label(__('badges.fields.description'))
                                             ->rows(3),
                                     ]);
                             })
@@ -91,12 +106,12 @@ class BadgeResource extends Resource
         return $table
             ->columns([
                 ImageColumn::make('icon_path')
-                    ->label('Icon')
+                    ->label(__('badges.fields.icon_path'))
                     ->square()
                     ->size(40),
 
                 TextColumn::make('name')
-                    ->label('Name')
+                    ->label(__('badges.fields.name'))
                     ->getStateUsing(fn(Badge $record) => $record->name)
                     ->searchable()
                     ->sortable(),
@@ -110,26 +125,28 @@ class BadgeResource extends Resource
                     }),
 
                 TextColumn::make('points_required')
-                    ->label('Points Required')
+                    ->label(__('badges.fields.points_required'))
                     ->sortable(),
 
                 ToggleColumn::make('is_active')
-                    ->label('Active'),
+                    ->label(__('badges.fields.is_active')),
 
                 TextColumn::make('created_at')
+                    ->label(__('badges.fields.created_at'))
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
                 SelectFilter::make('type')
+                    ->label(__('badges.filters.type'))
                     ->options([
-                        'course_completion' => 'Course Completion',
-                        'points_achievement' => 'Points Achievement',
-                        'special_achievement' => 'Special Achievement',
+                        'course_completion' => __('badges.types.course_completion'),
+                        'points_achievement' => __('badges.types.points_achievement'),
+                        'special_achievement' => __('badges.types.special_achievement'),
                     ]),
                 TernaryFilter::make('is_active')
-                    ->label('Active'),
+                    ->label(__('badges.filters.is_active')),
             ]);
     }
 
