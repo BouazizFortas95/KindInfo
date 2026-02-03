@@ -27,6 +27,13 @@ class SettingResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCog6Tooth;
 
+    protected static ?int $navigationSort = 1;
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('general.system');
+    }
+
     protected static ?string $recordTitleAttribute = null;
 
     public static function getModelLabel(): string
@@ -101,11 +108,11 @@ class SettingResource extends Resource
                         FileUpload::make('logo')
                             ->label('Website Logo')
                             ->image()
-                            ->imageEditor() 
+                            ->imageEditor()
                             ->directory('site')
                             ->visibility('public')
-                            ->columnSpanFull() 
-                            ->extraAttributes(['class' => 'dropzone-style']) 
+                            ->columnSpanFull()
+                            ->extraAttributes(['class' => 'dropzone-style'])
                             ->placeholder('Drag and drop your logo here or click to browse')
                             ->imagePreviewHeight('250')
                             ->loadingIndicatorPosition('left')
@@ -116,7 +123,7 @@ class SettingResource extends Resource
                         FileUpload::make('favicon')
                             ->label('Favicon')
                             ->image()
-                            ->avatar() 
+                            ->avatar()
                             ->imageEditor()
                             ->directory('site')
                             ->placeholder('Upload Favicon')

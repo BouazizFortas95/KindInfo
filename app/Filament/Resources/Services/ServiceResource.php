@@ -29,6 +29,13 @@ class ServiceResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedBolt;
 
+    protected static ?int $navigationSort = 2;
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('general.content_management');
+    }
+
     protected static ?string $recordTitleAttribute = 'title';
 
     public static function getLabel(): ?string

@@ -1,24 +1,42 @@
 <?php
 
+use App\Models\Badge;
+use App\Models\User;
+use App\Models\Course;
 use Illuminate\Support\Facades\Route;
-use Mcamara\LaravelLocalization\Facades\LaravelLocalization;
 
-// Localized routes group
-Route::group([
-    'prefix' => LaravelLocalization::setLocale(),
-    'middleware' => ['localizationRoutes', 'localeSessionRedirect', 'localizationRedirect', 'localeViewPath']
-], function () {
-
-    // Home page
-    Route::get('/', function () {
-        return view('welcome');
-    })->name('home');
-
-    // Add your other localized routes here
-
+Route::get('/', function () {
+    return view('welcome');
 });
 
-// Non-localized routes (if any)
-// Route::get('/non-localized', function() {
-//     return 'This route is not localized';
-// });
+// Temporary route to check database content
+Route::get('/check-db', function () {
+    $badges = Badge::with('translations')->get();
+    $badgeTranslationCount = \DB::table('badge_translations')->count();
+    
+    $data = [
+        'badges_count' => Badge::count(),
+        'users_count' => User::count(),
+        'courses_count' => Course::count(),
+        'badge_translations_count' => $badgeTranslationCount,
+        'badges' => $badges->map(function ($badge) {
+            return [
+                'id' => $badge->id,
+                'type' => $badge->type,
+                'points_required' => $badge->points_required,
+                'translations_count' => $badge->translations->count(),
+                'translations' => $badge->translations->map(fn($t) => [
+                    'locale' => $t->locale,
+                    'name' => $t->name,
+                    'description' => $t->description
+                ]),
+                'current_name' => $badge->name ?? 'NO NAME',
+                'current_description' => $badge->description ?? 'NO DESC'
+            ];
+        }),
+        'users' => User::latest()->take(3)->get(['id', 'name', 'email', 'created_at']),
+        'courses' => Course::latest()->take(3)->get(['id', 'created_at']),
+    ];
+    
+    return response()->json($data, 200, [], JSON_PRETTY_PRINT);
+});

@@ -27,6 +27,7 @@ class DatabaseSeeder extends Seeder
             CategorySeeder::class,
             WorkSeeder::class,
             ServiceSeeder::class,
+            BadgeSeeder::class,
         ]);
     }
 }

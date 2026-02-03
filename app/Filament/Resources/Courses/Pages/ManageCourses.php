@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Courses\Pages;
 
+use App\Filament\Actions\GenerateLessonsAction;
 use App\Filament\Resources\Courses\CourseResource;
 use App\Models\Course;
 use App\Models\Lesson;
@@ -18,6 +19,7 @@ class ManageCourses extends ManageRecords
     protected function getHeaderActions(): array
     {
         return [
+            GenerateLessonsAction::make(),
             CreateAction::make()
                 ->modalWidth('5xl')
                 ->using(function (array $data): Course {
@@ -47,6 +49,7 @@ class ManageCourses extends ManageRecords
                             $lesson->course_id = $record->id;
                             $lesson->video_url = $lessonData['video_url'] ?? '';
                             $lesson->sort_order = $index;
+                            $lesson->attachments = $lessonData['attachments'] ?? [];
 
                             // Set lesson translation for current locale
                             $lesson->translateOrNew($locale)->title = $lessonData['title'] ?? '';

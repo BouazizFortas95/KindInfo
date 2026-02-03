@@ -28,6 +28,13 @@ class CategoryResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleGroup;
 
+    protected static ?int $navigationSort = 2;
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('general.course_management');
+    }
+
     protected static ?string $recordTitleAttribute = null;
 
     public static function getModelLabel(): string

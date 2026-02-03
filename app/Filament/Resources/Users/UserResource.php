@@ -18,6 +18,13 @@ class UserResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedUsers;
 
+    protected static ?int $navigationSort = 1;
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('general.user_management');
+    }
+
     protected static ?string $recordTitleAttribute = 'name';
 
     public static function getModelLabel(): string

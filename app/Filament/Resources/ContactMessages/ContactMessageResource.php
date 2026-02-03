@@ -18,6 +18,13 @@ class ContactMessageResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-envelope';
 
+    protected static ?int $navigationSort = 1;
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('general.communication');
+    }
+
     public static function getNavigationLabel(): string
     {
         return __('contact_messages.resource.plural_label');

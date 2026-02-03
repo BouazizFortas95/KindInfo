@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Courses;
 
+use App\Filament\Actions\BulkGenerateLessonsAction;
 use App\Filament\Resources\Courses\Pages\ManageCourses;
 use App\Models\Category;
 use App\Models\Course;
@@ -39,6 +40,13 @@ class CourseResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedAcademicCap;
 
+    protected static ?int $navigationSort = 1;
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('general.course_management');
+    }
+
     protected static ?string $recordTitleAttribute = 'title';
 
     public static function getLabel(): ?string
@@ -65,6 +73,7 @@ class CourseResource extends Resource
                                     ->directory('courses/thumbnails')
                                     ->image()
                                     ->imageEditor()
+                                    ->formatStateUsing(fn($state) => is_array($state) ? (reset($state) ?: null) : $state)
                                     ->columnSpanFull(),
 
                                 Select::make('category_id')
@@ -149,7 +158,28 @@ class CourseResource extends Resource
                                             ->downloadable()
                                             ->openable()
                                             ->reorderable()
-                                            ->storeFileNamesIn('attachments')  // This stores file paths
+                                            ->formatStateUsing(function ($state) {
+                                                if (!is_array($state))
+                                                    return [];
+
+                                                return collect($state)->map(function ($item) {
+                                                    // If it's already a string, return it
+                                                    if (is_string($item))
+                                                        return $item;
+
+                                                    // If it's an array/object, try to find the 'path' key
+                                                    if (is_array($item) && isset($item['path'])) {
+                                                        return $item['path'];
+                                                    }
+
+                                                    // Fallback to first string if found
+                                                    if (is_array($item)) {
+                                                        return collect($item)->first(fn($v) => is_string($v));
+                                                    }
+
+                                                    return null;
+                                                })->filter()->values()->toArray();
+                                            })
                                             ->columnSpanFull(),
                                     ])
                                     ->columns(1)
@@ -238,6 +268,9 @@ class CourseResource extends Resource
                     ->mutateRecordDataUsing(function (Course $record, array $data): array {
                         $locale = App::getLocale();
 
+                        // Load course data
+                        $data['thumbnail'] = is_array($record->thumbnail) ? (reset($record->thumbnail) ?: null) : $record->thumbnail;
+
                         // Load course translations for current locale
                         $translation = $record->translate($locale);
                         if ($translation) {
@@ -258,7 +291,9 @@ class CourseResource extends Resource
                             $lessonData = [
                                 'id' => $lesson->id,
                                 'video_url' => $lesson->video_url,
-                                'attachments' => $lesson->attachments,
+                                'attachments' => collect(is_array($lesson->attachments) ? $lesson->attachments : [])->map(function ($item) {
+                                    return is_array($item) ? ($item['path'] ?? null) : $item;
+                                })->filter()->values()->toArray(),
                                 'title' => '',
                                 'description' => '',
                             ];
@@ -351,6 +386,7 @@ class CourseResource extends Resource
                 DeleteAction::make(),
             ])
             ->toolbarActions([
+                BulkGenerateLessonsAction::make(),
                 BulkActionGroup::make([
                     DeleteBulkAction::make(),
                 ]),
