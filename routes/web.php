@@ -3,11 +3,15 @@
 use App\Models\Badge;
 use App\Models\User;
 use App\Models\Course;
+use App\Http\Controllers\CertificateController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     return view('welcome');
 });
+
+// Certificate download route
+Route::get('/certificates/{uuid}/download', [CertificateController::class, 'download'])->name('certificates.download');
 
 // Temporary route to check database content
 Route::get('/check-db', function () {

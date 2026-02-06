@@ -107,4 +107,7 @@ return [
     'template_final_desc' => 'اجمع كل شيء معاً في مشروع نهائي شامل.',
     'enrolled_courses' => 'الدورات المسجلة',
     'lessons_completed' => 'الدروس المكتملة',
+    'completion_badge' => 'شارة الإكمال',
+    'certificate_awarded' => 'تم منح الشهادة!',
+    'badge_earned' => 'تم استلام الشارة!',
 ];

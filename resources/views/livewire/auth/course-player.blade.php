@@ -2,6 +2,8 @@
 
 use Livewire\Volt\Component;
 use App\Models\Course;
+use App\Models\Certificate;
+use Filament\Notifications\Notification;
 use Illuminate\Support\Facades\Storage;
 
 new class extends Component {
@@ -22,6 +24,9 @@ new class extends Component {
         $this->course = $course->load(['lessons.translations', 'translations']);
         $this->activeLesson = $this->course->lessons()->with('translations')->first();
         $this->loadUserProgress();
+        
+        // Check for course completion on mount
+        $this->checkCourseCompletion();
     }
 
     public function selectLesson($id)
@@ -118,6 +123,65 @@ new class extends Component {
         if ($this->autoPlay) {
             $this->playNextLesson();
         }
+
+        $this->checkCourseCompletion();
+    }
+
+    private function checkCourseCompletion()
+    {
+        if (!auth()->check()) {
+            return;
+        }
+
+        $totalLessons = $this->course->lessons->count();
+        $completedCount = auth()
+            ->user()
+            ->lessons()
+            ->whereIn('lesson_id', $this->course->lessons->pluck('id'))
+            ->count();
+
+        if ($completedCount >= $totalLessons && $totalLessons > 0) {
+            $user = auth()->user();
+
+            // 1. Award Badge
+            if ($this->course->badge_id) {
+                if (!$user->badges()->where('badge_id', $this->course->badge_id)->exists()) {
+                    $user->badges()->attach($this->course->badge_id, ['earned_at' => now()]);
+
+                    Notification::make()
+                        ->success()
+                        ->title(__('courses.badge_earned'))
+                        ->body(__('courses.you_earned') . ' ' . $this->course->badge->name)
+                        ->send();
+                }
+            }
+
+            // 2. Issue Certificate
+            if (!Certificate::where('user_id', $user->id)->where('course_id', $this->course->id)->exists()) {
+                $certificate = Certificate::create([
+                    'user_id' => $user->id,
+                    'course_id' => $this->course->id,
+                    'issued_at' => now(),
+                ]);
+                
+                // Set translations properly
+                $courseTitleEn = $this->course->translate('en')?->title ?? $this->course->title;
+                $courseTitleAr = $this->course->translate('ar')?->title ?? $this->course->title;
+                $userName = $user->name;
+                
+                $certificate->translateOrNew('en')->title = 'Certificate of Completion';
+                $certificate->translateOrNew('en')->body = "This certifies that {$userName} has successfully completed the course {$courseTitleEn}.";
+                $certificate->translateOrNew('ar')->title = 'شهادة إتمام';
+                $certificate->translateOrNew('ar')->body = "تشهد هذه الوثيقة بأن {$userName} قد أتم بنجاح دورة {$courseTitleAr}.";
+                $certificate->save();
+
+                Notification::make()
+                    ->success()
+                    ->title(__('courses.certificate_awarded'))
+                    ->body(__('courses.you_completed') . ' ' . $this->course->title)
+                    ->send();
+            }
+        }
     }
 
     public function updateProgress($lessonId, $currentTime, $duration)
@@ -131,6 +195,8 @@ new class extends Component {
 
             if ($progress >= 90 && !in_array($lessonId, $this->completedLessons)) {
                 $this->completeLesson($lessonId);
+                // Check for course completion after marking lesson as complete
+                $this->checkCourseCompletion();
             }
 
             // Periodically save progress to DB if logged in (e.g., every 5 seconds or on major changes)
@@ -731,14 +797,21 @@ new class extends Component {
 
                             <div style="display: flex; flex-wrap: wrap; gap: 0.75rem;">
                                 @foreach ($activeLesson->attachments as $file)
-                                    <a href="{{ Storage::url($file) }}" target="_blank" class="attachment-button">
-                                        <svg style="width: 1.25rem; height: 1.25rem;" fill="none"
-                                            stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                        </svg>
-                                        {{ basename($file) }}
-                                    </a>
+                                    @php
+                                        // Handle cases where file might be nested or valid string
+                                        $filePath = is_array($file) ? array_values($file)[0] ?? null : $file;
+                                    @endphp
+                                    @if ($filePath && is_string($filePath))
+                                        <a href="{{ Storage::url($filePath) }}" target="_blank"
+                                            class="attachment-button">
+                                            <svg style="width: 1.25rem; height: 1.25rem;" fill="none"
+                                                stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                            </svg>
+                                            {{ basename($filePath) }}
+                                        </a>
+                                    @endif
                                 @endforeach
                             </div>
                         </div>

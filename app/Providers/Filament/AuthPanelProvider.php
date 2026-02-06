@@ -42,6 +42,7 @@ class AuthPanelProvider extends PanelProvider
                 AccountWidget::class,
                 \App\Filament\Auth\Widgets\AchievementStats::class,
                 \App\Filament\Auth\Widgets\RecentActivityWidget::class,
+                \App\Filament\Auth\Widgets\RecentActivityChart::class,
             ])
             ->middleware([
                 EncryptCookies::class,

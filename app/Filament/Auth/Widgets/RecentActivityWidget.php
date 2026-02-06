@@ -2,74 +2,90 @@
 
 namespace App\Filament\Auth\Widgets;
 
+use App\Models\Badge;
 use App\Models\Lesson;
 use App\Models\User;
-use App\Models\Badge;
-use Filament\Widgets\Widget;
-use Illuminate\Support\Carbon;
+use Filament\Tables;
+use Filament\Tables\Table;
+use Filament\Widgets\TableWidget as BaseWidget;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
-class RecentActivityWidget extends Widget
+class RecentActivityWidget extends BaseWidget
 {
     protected static ?int $sort = 2;
-    
-    protected int | string | array $columnSpan = 'full';
-    
-    protected string $view = 'filament.widgets.recent-activity-widget';
-    
-    public function getViewData(): array
+
+    protected int|string|array $columnSpan = [
+        'default' => 'full',
+        'md' => 1,
+    ];
+
+    protected function getTableHeading(): string|null
     {
-        $locale = app()->getLocale();
-        $user = Auth::user();
-        $activities = [];
-        
-        // Get user's recent lesson completions
-        $userRecentLessons = $user->lessons()
-            ->where('lesson_user.progress', '>=', 100)
-            ->withPivot('updated_at')
-            ->orderBy('lesson_user.updated_at', 'desc')
-            ->limit(5)
-            ->get();
-            
-        foreach ($userRecentLessons as $lesson) {
-            $translation = $lesson->getTranslation($locale);
-            $activities[] = [
-                'type' => 'lesson',
-                'title' => $translation->title ?? 'Untitled Lesson',
-                'description' => __('general.you_completed'),
-                'timestamp' => Carbon::parse($lesson->pivot->updated_at)->diffForHumans(),
-                'date' => $lesson->pivot->updated_at,
-            ];
-        }
-        
-        // Get user's recent badge achievements
-        $userRecentBadges = $user->badges()
-            ->withPivot('earned_at')
-            ->orderBy('user_badges.earned_at', 'desc')
-            ->limit(5)
-            ->get();
-            
-        foreach ($userRecentBadges as $badge) {
-            $translation = $badge->getTranslation($locale);
-            $activities[] = [
-                'type' => 'badge',
-                'title' => $translation->name ?? 'Untitled Badge',
-                'description' => __('general.you_earned'),
-                'timestamp' => Carbon::parse($badge->pivot->earned_at)->diffForHumans(),
-                'date' => $badge->pivot->earned_at,
-            ];
-        }
-        
-        // Sort activities by date
-        usort($activities, function ($a, $b) {
-            return $b['date'] <=> $a['date'];
-        });
-        
-        // Limit to 10 most recent activities
-        $activities = array_slice($activities, 0, 10);
-        
-        return [
-            'activities' => $activities,
-        ];
+        return __('general.recent_activity');
+    }
+
+    public function table(Table $table): Table
+    {
+        return $table
+            ->query(function () {
+                return \App\Models\RecentActivity::query()
+                    ->where('user_id', Auth::id())
+                    ->orderBy('activity_date', 'desc');
+            })
+            ->columns([
+                Tables\Columns\IconColumn::make('type')
+                    ->label('')
+                    ->icon(fn(string $state): string => match ($state) {
+                        'lesson' => 'heroicon-m-play',
+                        'badge' => 'heroicon-m-trophy',
+                        default => 'heroicon-o-question-mark-circle',
+                    })
+                    ->color(fn(string $state): string => match ($state) {
+                        'lesson' => 'primary',
+                        'badge' => 'warning',
+                        default => 'gray',
+                    })
+                    ->size('lg'),
+
+                Tables\Columns\TextColumn::make('activity_description')
+                    ->label(__('general.activity'))
+                    ->state(function ($record) {
+                        return $record->foreign_id;
+                    })
+                    ->formatStateUsing(function ($state, $record) {
+                        // For auth user, "User" is always "You"
+                        $userName = __('general.you');
+
+                        if ($record->type === 'lesson') {
+                            $lesson = Lesson::find($record->foreign_id);
+                            $title = $lesson?->title ?? __('general.unknown_lesson');
+                            return view('filament.components.activity-row', [
+                                'user' => $userName,
+                                'action' => __('general.completed'),
+                                'subject' => $title,
+                                'type' => 'lesson'
+                            ])->render();
+                        } else {
+                            $badge = Badge::find($record->foreign_id);
+                            $title = $badge?->name ?? __('general.unknown_badge');
+                            return view('filament.components.activity-row', [
+                                'user' => $userName,
+                                'action' => __('general.earned'),
+                                'subject' => $title,
+                                'type' => 'badge'
+                            ])->render();
+                        }
+                    })
+                    ->html(),
+
+                Tables\Columns\TextColumn::make('activity_date')
+                    ->label(__('general.date'))
+                    ->date('M d, Y')
+                    ->description(fn($record) => \Carbon\Carbon::parse($record->activity_date)->diffForHumans())
+                    ->alignEnd(),
+            ])
+            ->paginated([5, 10, 25])
+            ->defaultPaginationPageOption(5);
     }
 }

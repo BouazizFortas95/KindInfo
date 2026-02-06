@@ -107,4 +107,7 @@ return [
     'template_final_desc' => 'Put everything together in a comprehensive final project.',
     'enrolled_courses' => 'Enrolled Courses',
     'lessons_completed' => 'Lessons Completed',
+    'completion_badge' => 'Completion Badge',
+    'certificate_awarded' => 'Certificate Awarded!',
+    'badge_earned' => 'Badge Earned!',
 ];

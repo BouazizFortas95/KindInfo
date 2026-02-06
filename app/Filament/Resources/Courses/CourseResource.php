@@ -93,6 +93,14 @@ class CourseResource extends Resource
                                     ->required()
                                     ->columnSpanFull(),
 
+                                Select::make('badge_id')
+                                    ->label(__('courses.completion_badge'))
+                                    ->relationship('badge', 'id')
+                                    ->getOptionLabelFromRecordUsing(fn($record) => $record->name ?? '-')
+                                    ->searchable()
+                                    ->preload()
+                                    ->columnSpanFull(),
+
                                 TextInput::make('price')
                                     ->label(__('courses.price'))
                                     ->numeric()

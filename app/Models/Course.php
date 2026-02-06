@@ -33,4 +33,14 @@ class Course extends Model implements Translatable
     {
         return $this->belongsTo(Category::class, 'category_id', 'id');
     }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    public function badge(): BelongsTo
+    {
+        return $this->belongsTo(Badge::class);
+    }
 }
